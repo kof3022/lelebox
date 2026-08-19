@@ -19,6 +19,8 @@ class Game2048 {
     var score = 0
     var won = false
     var over = false
+    /** 测试用开关：关闭后不自动补随机牌，便于确定性断言 */
+    var addTiles: Boolean = true
     private val rng = Random(System.currentTimeMillis())
 
     fun newGame() {
@@ -83,7 +85,7 @@ class Game2048 {
             }
         }
         val changed = !board.contentEquals(before)
-        if (changed) {
+        if (changed && addTiles) {
             addRandom()
         }
         // 无论本步是否变化，都重新判定是否还能走（满盘且无相邻相等时结束）

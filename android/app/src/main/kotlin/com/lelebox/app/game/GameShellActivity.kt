@@ -83,10 +83,13 @@ class GameShellActivity : ComponentActivity() {
                     title = { Text("要退出吗？", style = MaterialTheme.typography.titleLarge) },
                     text = { Text("进度会自动保存，下次接着玩。", style = MaterialTheme.typography.bodyLarge) },
                     confirmButton = {
-                        ElderButton("退出") {
-                            showExitConfirm = false
-                            finish()
-                        }
+                        ElderButton(
+                            text = "退出",
+                            onClick = {
+                                showExitConfirm = false
+                                finish()
+                            },
+                        )
                     },
                     dismissButton = {
                         ElderButton(

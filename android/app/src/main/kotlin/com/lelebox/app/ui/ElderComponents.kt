@@ -22,8 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,9 +40,8 @@ fun ElderButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier
-            .heightIn(min = 64.dp)
-            .semantics { contentDescription = text },
+        // Button + Text 自带可读标签（TalkBack 合并朗读），无需额外 contentDescription
+        modifier = modifier.heightIn(min = 64.dp),
         colors = colors,
         shape = MaterialTheme.shapes.medium,
     ) {

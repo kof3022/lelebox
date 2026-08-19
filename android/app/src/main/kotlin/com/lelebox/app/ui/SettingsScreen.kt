@@ -104,23 +104,24 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.weight(1f))
 
-        // —— 数据 ——
-        SectionEyebrow("数据")
+        // —— 数据（居中、下移） ——
+        SectionEyebrow("数据", modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(Modifier.height(10.dp))
         ElderButton(
             text = "清空所有游戏进度",
             onClick = { showClearDialog = true },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
             ),
         )
-
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(22.dp))
 
         Text(
-            "乐龄游戏盒 v0.2.0-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
+            "乐龄游戏盒 v0.2.1-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -158,11 +159,12 @@ fun SettingsScreen(
 
 /** 小节眉标：小号、字距拉开、暖灰 */
 @Composable
-private fun SectionEyebrow(text: String) {
+private fun SectionEyebrow(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier,
     )
 }
 

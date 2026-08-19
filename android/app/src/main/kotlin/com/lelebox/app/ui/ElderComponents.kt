@@ -1,6 +1,7 @@
 package com.lelebox.app.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -35,7 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -44,13 +47,14 @@ import androidx.compose.ui.unit.sp
  * 规范见 docs/03；原则：大字、大目标、暖灰单家族、去饱和点缀、按压物理反馈。
  */
 
-/** 胶囊大按钮（≥64dp）：默认主色实心；可传 tonal 配色做次级 */
+/** 胶囊大按钮：默认 ≥64dp；顶栏等紧凑场景可传 minHeight 缩小（仍 ≥48dp 无障碍基线） */
 @Composable
 fun ElderButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    minHeight: Dp = 64.dp,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -59,7 +63,7 @@ fun ElderButton(
         onClick = onClick,
         interactionSource = interaction,
         modifier = modifier
-            .heightIn(min = 64.dp)
+            .heightIn(min = minHeight)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -75,7 +79,7 @@ fun ElderButton(
     }
 }
 
-/** 游戏卡片：外描线 + 内嵌图标容器 + 去饱和身份色 + 按压反馈 */
+/** 游戏卡片：外描线 + 内嵌图标容器 + 去饱和身份色 + 按压反馈；iconRes 优先于 emoji */
 @Composable
 fun ElderCard(
     emoji: String,
@@ -84,6 +88,7 @@ fun ElderCard(
     accent: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    iconRes: Int? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -125,7 +130,15 @@ fun ElderCard(
                     .background(accent.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(emoji, fontSize = 34.sp)
+                if (iconRes != null) {
+                    Image(
+                        painter = painterResource(iconRes),
+                        contentDescription = title,
+                        modifier = Modifier.size(44.dp),
+                    )
+                } else {
+                    Text(emoji, fontSize = 34.sp)
+                }
             }
             Spacer(Modifier.height(14.dp))
             Text(
@@ -146,7 +159,7 @@ fun ElderCard(
     }
 }
 
-/** 顶栏：奶油底 + 底部暖色细线；返回为浅色胶囊，右侧为暖棕胶囊 */
+/** 顶栏：奶油底 + 底部暖色细线；紧凑胶囊按钮（52dp），标题垂直居中 */
 @Composable
 fun ElderTopBar(
     title: String,
@@ -159,13 +172,14 @@ fun ElderTopBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (onBack != null) {
                     ElderButton(
                         text = "← 返回",
                         onClick = onBack,
+                        minHeight = 52.dp,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -184,6 +198,7 @@ fun ElderTopBar(
                     ElderButton(
                         text = rightText,
                         onClick = onRight,
+                        minHeight = 52.dp,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = Color.White,

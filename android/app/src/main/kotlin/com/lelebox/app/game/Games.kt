@@ -1,6 +1,7 @@
 package com.lelebox.app.game
 
 import androidx.compose.ui.graphics.Color
+import com.lelebox.app.R
 import com.lelebox.app.ui.Game2048
 import com.lelebox.app.ui.GameMemory
 import com.lelebox.app.ui.GameSolitaire
@@ -18,6 +19,8 @@ data class GameEntry(
     val kind: GameKind,
     val emoji: String,
     val accent: Color,
+    /** 矢量图标（即梦生成 PNG 后可替换为位图资源，见 docs/09） */
+    val iconRes: Int? = null,
     /** WEB 游戏：assets 内相对路径，如 "games/solitaire/index.html" */
     val assetPath: String? = null,
 )
@@ -33,6 +36,7 @@ object Games {
             kind = GameKind.NATIVE,
             emoji = "🔢",
             accent = Game2048,
+            iconRes = R.drawable.ic_game_2048,
         ),
         GameEntry(
             id = "solitaire",
@@ -42,6 +46,7 @@ object Games {
             kind = GameKind.WEB,
             emoji = "🃏",
             accent = GameSolitaire,
+            iconRes = R.drawable.ic_game_solitaire,
             assetPath = "games/solitaire/index.html",
         ),
         GameEntry(
@@ -52,6 +57,7 @@ object Games {
             kind = GameKind.NATIVE,
             emoji = "🧩",
             accent = GameSudoku,
+            iconRes = R.drawable.ic_game_sudoku,
         ),
         GameEntry(
             id = "memory",
@@ -61,6 +67,7 @@ object Games {
             kind = GameKind.NATIVE,
             emoji = "🎴",
             accent = GameMemory,
+            iconRes = R.drawable.ic_game_memory,
         ),
     )
 

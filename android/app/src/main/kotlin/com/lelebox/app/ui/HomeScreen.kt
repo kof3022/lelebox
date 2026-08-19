@@ -62,6 +62,7 @@ fun HomeScreen(
                         accent = game.accent,
                         onClick = { onOpenGame(game) },
                         modifier = Modifier.fillMaxWidth(),
+                        iconRes = game.iconRes,
                     )
                 }
             }

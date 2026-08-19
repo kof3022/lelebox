@@ -11,12 +11,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** 全局字号三档（docs/03 §1） */
+/** 全局字号三档（docs/03 §1）：小 / 标准 / 大 */
 enum class FontScale(val label: String, val factor: Float) {
+    SMALL("小", 0.85f),
     STANDARD("标准", 1f),
     LARGE("大", 1.25f),
-    XLARGE("超大", 1.6f),
 }
+
+/** 安全解析存档里的档位（旧版本曾用 XLARGE 等，需兜底） */
+fun parseFontScale(saved: String?): FontScale =
+    FontScale.entries.firstOrNull { it.name == saved } ?: FontScale.STANDARD
 
 val LocalFontScale = staticCompositionLocalOf { FontScale.STANDARD }
 

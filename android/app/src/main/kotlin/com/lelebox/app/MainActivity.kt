@@ -15,6 +15,7 @@ import com.lelebox.app.game.GameShellActivity
 import com.lelebox.app.ui.ElderTheme
 import com.lelebox.app.ui.ElderTopBar
 import com.lelebox.app.ui.FontScale
+import com.lelebox.app.ui.parseFontScale
 import com.lelebox.app.ui.HomeScreen
 import com.lelebox.app.ui.SettingsScreen
 
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             var fontScale by remember {
-                mutableStateOf(FontScale.valueOf(prefs.getString("font_scale", FontScale.STANDARD.name)!!))
+                mutableStateOf(parseFontScale(prefs.getString("font_scale", null)))
             }
             var highContrast by remember { mutableStateOf(prefs.getBoolean("high_contrast", false)) }
             var screen by remember { mutableStateOf(Screen.HOME) }

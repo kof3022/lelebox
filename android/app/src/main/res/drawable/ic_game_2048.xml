@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2048 图标：三块合并滑动的方块（青绿 #3E8E7E / 浅面 #E3F0EA） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#E3F0EA"
+        android:pathData="M10,10 h88 a12,12 0 0 1 12,12 v64 a12,12 0 0 1 -12,12 h-88 a12,12 0 0 1 -12,-12 v-64 a12,12 0 0 1 12,-12 z" />
+    <path
+        android:fillColor="#3E8E7E"
+        android:pathData="M40,30 h28 a6,6 0 0 1 6,6 v6 a6,6 0 0 1 -6,6 h-28 a6,6 0 0 1 -6,-6 v-6 a6,6 0 0 1 6,-6 z" />
+    <path
+        android:fillColor="#3E8E7E"
+        android:pathData="M44,52 h20 a6,6 0 0 1 6,6 v6 a6,6 0 0 1 -6,6 h-20 a6,6 0 0 1 -6,-6 v-6 a6,6 0 0 1 6,-6 z" />
+    <path
+        android:fillColor="#2F6E62"
+        android:pathData="M48,74 h12 a6,6 0 0 1 6,6 v4 a6,6 0 0 1 -6,6 h-12 a6,6 0 0 1 -6,-6 v-4 a6,6 0 0 1 6,-6 z" />
+</vector>

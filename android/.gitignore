@@ -1,0 +1,14 @@
+# LeLeBox 根忽略
+*.iml
+.idea/
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+.kotlin/

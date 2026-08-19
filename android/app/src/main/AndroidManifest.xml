@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  乐龄游戏盒：零权限铁律。
+  本文件【不包含任何 <uses-permission>】——包括 INTERNET（绝对离线）。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.LeLeBox">
+
+        <!-- 主界面：游戏宫格 + 设置 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 游戏壳：承载 L2 离线 H5 游戏（WebView）与 L1 原生游戏 -->
+        <activity
+            android:name=".game.GameShellActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+
+    </application>
+</manifest>

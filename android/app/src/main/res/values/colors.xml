@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 老年友好暖色系（见 docs/03 规范 §3） -->
+    <color name="window_background">#FDF8F0</color>
+    <color name="ic_launcher_background">#2E7D32</color>
+</resources>

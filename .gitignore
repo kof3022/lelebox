@@ -1,0 +1,5 @@
+# 根忽略（乐龄游戏盒）
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

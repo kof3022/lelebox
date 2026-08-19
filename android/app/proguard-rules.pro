@@ -1,2 +1,7 @@
-# 乐龄游戏盒 ProGuard 规则（M0 脚手架）
-# WebView JS 桥（ElderBridge）在 M1 接入后补充 keep 规则。
+# 乐龄游戏盒 ProGuard 规则
+# WebView JS 桥（ElderBridge）：@JavascriptInterface 方法必须保留，否则 H5 存档失效
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepattributes JavascriptInterface
+

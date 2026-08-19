@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.lelebox.app.game.memory.MemoryGameScreen
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderTheme
 import com.lelebox.app.ui.ElderTopBar
@@ -72,7 +73,13 @@ class GameShellActivity : ComponentActivity() {
                             factory = { ctx -> createWebView(ctx, game) },
                             modifier = Modifier.fillMaxSize(),
                         )
-                        GameKind.NATIVE -> NativePlaceholder(game)
+                        GameKind.NATIVE -> when (game.id) {
+                            "memory" -> MemoryGameScreen(
+                                prefs = prefs,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            else -> NativePlaceholder(game)
+                        }
                     }
                 }
             }

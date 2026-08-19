@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -118,7 +118,8 @@ private fun SudokuBoard(
     }
     val puzzle = init.puzzle
     val solved = init.solved
-    var current by remember { mutableStateOf(init.current) }
+    // 关键：current 必须随 round 重置（否则「重新开始」后旧填入值残留，与新手盘错位）
+    var current by remember(round) { mutableStateOf(init.current) }
     val givens = remember(puzzle) { puzzle.indices.filter { puzzle[it] != 0 }.toSet() }
 
     var selected by remember { mutableStateOf<Int?>(null) }
@@ -190,39 +191,60 @@ private fun SudokuBoard(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 操作行
+        // 操作区：两行大按钮，字不换行
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             ElderButton(
                 text = "重新开始",
                 onClick = ::newGame,
                 modifier = Modifier.weight(1f),
+                minHeight = 56.dp,
             )
             ElderButton(
-                text = "提示",
+                text = if (hintCount > 0) "提示($hintCount)" else "提示",
                 onClick = ::onHint,
                 modifier = Modifier.weight(1f),
+                minHeight = 56.dp,
             )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             ElderButton(
-                text = if (candidateMode) "候选：开" else "候选：关",
+                text = if (candidateMode) "做记号：开" else "做记号：关",
                 onClick = { candidateMode = !candidateMode },
                 modifier = Modifier.weight(1f),
+                minHeight = 56.dp,
+                colors = if (candidateMode) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    )
+                },
             )
         }
-        if (hintCount > 0) {
-            Spacer(Modifier.height(4.dp))
-            Text("已提示 $hintCount 次", style = MaterialTheme.typography.bodyMedium)
-        }
+        Text(
+            "「做记号」打开后：先点一个格子，再点数字，小记号会写进格子里当笔记（再点一次可取消）",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Spacer(Modifier.height(8.dp))
 
-        // 九宫格
+        // 九宫格（弹性占满剩余空间，避免挤压底部数字键）
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
+                .weight(1f)
                 .background(Color.White)
                 .border(2.dp, Color(0xFF3B3B3B)),
         ) {

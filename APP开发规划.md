@@ -257,7 +257,7 @@ Android Studio（Kotlin 2.x + Compose）、Gradle、JDK 17+、真机测试矩阵
 | 决策点 | 结论 |
 |--------|------|
 | 项目名 | **乐龄游戏盒 / LeLeBox** |
-| 第一批游戏 | **锁定 4 款**：纸牌接龙（H5）、2048（原生）、数独（原生）、记忆翻牌（原生） |
+| 第一批游戏 | **2025-08 修订：纸牌接龙已移除**（自研 H5 效果差、多数老人不会玩），现为 **2048、数独、记忆翻牌** 三款原生 |
 | 网络策略 | **绝对离线**：零 INTERNET 权限，更新靠安装新版 APK |
 | 当前动作 | 必装 Skills 已装 3 枚（mobile-android-design、android-accessibility、claude-android-ninja；原 android-kotlin/android-jetpack 条目已失效并处理），脚手架待后续 |
 

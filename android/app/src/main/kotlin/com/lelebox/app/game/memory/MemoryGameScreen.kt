@@ -1,6 +1,7 @@
 package com.lelebox.app.game.memory
 
 import android.content.SharedPreferences
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -186,7 +188,7 @@ private fun MemoryBoard(
                     repeat(level.columns) { c ->
                         val index = r * level.columns + c
                         MemoryCard(
-                            emoji = board[index],
+                            animal = board[index],
                             faceUp = index in matched || index in flipped,
                             matched = index in matched,
                             index = index,
@@ -240,7 +242,7 @@ private fun MemoryBoard(
 
 @Composable
 private fun MemoryCard(
-    emoji: String,
+    animal: MemoryAnimal,
     faceUp: Boolean,
     matched: Boolean,
     index: Int,
@@ -253,7 +255,7 @@ private fun MemoryCard(
         else -> MaterialTheme.colorScheme.primary
     }
     val desc = when {
-        faceUp -> "第${index + 1}张牌，图案$emoji"
+        faceUp -> "第${index + 1}张牌，动物${animal.name}"
         else -> "第${index + 1}张牌，背面"
     }
     Box(
@@ -265,10 +267,20 @@ private fun MemoryCard(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            if (faceUp) emoji else "？",
-            fontSize = if (faceUp) 40.sp else 32.sp,
-            color = if (faceUp) Color(0xFF2E2A25) else MaterialTheme.colorScheme.onPrimary,
-        )
+        if (faceUp) {
+            if (animal.iconRes != null) {
+                Image(
+                    painter = painterResource(animal.iconRes),
+                    contentDescription = animal.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                )
+            } else {
+                Text(animal.emoji, fontSize = 40.sp)
+            }
+        } else {
+            Text("？", fontSize = 32.sp, color = MaterialTheme.colorScheme.onPrimary)
+        }
     }
 }

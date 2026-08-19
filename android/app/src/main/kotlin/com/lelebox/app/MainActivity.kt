@@ -30,10 +30,9 @@ class MainActivity : ComponentActivity() {
             var fontScale by remember {
                 mutableStateOf(parseFontScale(prefs.getString("font_scale", null)))
             }
-            var highContrast by remember { mutableStateOf(prefs.getBoolean("high_contrast", false)) }
             var screen by remember { mutableStateOf(Screen.HOME) }
 
-            ElderTheme(fontScale = fontScale, highContrast = highContrast) {
+            ElderTheme(fontScale = fontScale) {
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
                     topBar = {
@@ -62,11 +61,6 @@ class MainActivity : ComponentActivity() {
                             onFontScale = {
                                 fontScale = it
                                 prefs.edit().putString("font_scale", it.name).apply()
-                            },
-                            highContrast = highContrast,
-                            onHighContrast = {
-                                highContrast = it
-                                prefs.edit().putBoolean("high_contrast", it).apply()
                             },
                             modifier = Modifier.padding(padding),
                         )

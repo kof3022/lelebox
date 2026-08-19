@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.ui.ElderButton
+import com.lelebox.app.ui.GameMemory
+import com.lelebox.app.ui.SuccessSoft
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -62,13 +65,22 @@ private fun MemoryLevelSelect(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("🎴", fontSize = 56.sp)
-        Spacer(Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(GameMemory.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("🎴", fontSize = 48.sp)
+        }
+        Spacer(Modifier.height(18.dp))
         Text("记忆翻牌", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         Text(
             "翻开两张相同的牌，全部配对成功就赢啦！",
             style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(32.dp))
@@ -236,7 +248,7 @@ private fun MemoryCard(
     modifier: Modifier = Modifier,
 ) {
     val bg = when {
-        matched -> Color(0xFFC8E6C9) // 浅绿：已配对
+        matched -> SuccessSoft // 已配对：暖调浅绿
         faceUp -> Color.White
         else -> MaterialTheme.colorScheme.primary
     }
@@ -247,16 +259,16 @@ private fun MemoryCard(
     Box(
         modifier = modifier
             .semantics { contentDescription = desc }
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(bg)
-            .border(2.dp, Color(0xFFB0B0B0), RoundedCornerShape(12.dp))
+            .border(2.dp, Color(0xFFD8CFC2), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             if (faceUp) emoji else "？",
             fontSize = if (faceUp) 40.sp else 32.sp,
-            color = if (faceUp) Color(0xFF3B3B3B) else MaterialTheme.colorScheme.onPrimary,
+            color = if (faceUp) Color(0xFF2E2A25) else MaterialTheme.colorScheme.onPrimary,
         )
     }
 }

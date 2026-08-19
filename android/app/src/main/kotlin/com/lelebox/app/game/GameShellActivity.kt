@@ -67,7 +67,6 @@ class GameShellActivity : ComponentActivity() {
         }
         val game = Games.byId(gameId)
         val fontScale = parseFontScale(settingsPrefs.getString("font_scale", null))
-        val highContrast = settingsPrefs.getBoolean("high_contrast", false)
 
         setContent {
             var showHelp by remember { mutableStateOf(false) }
@@ -84,7 +83,7 @@ class GameShellActivity : ComponentActivity() {
             // 物理返回键：直接退出（进度自动保存）
             BackHandler { finish() }
 
-            ElderTheme(fontScale = fontScale, highContrast = highContrast) {
+            ElderTheme(fontScale = fontScale) {
                 Column(Modifier.fillMaxSize()) {
                     ElderTopBar(
                         title = game.title,

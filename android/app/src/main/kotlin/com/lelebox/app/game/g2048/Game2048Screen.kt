@@ -2,9 +2,14 @@ package com.lelebox.app.game.g2048
 
 import android.content.SharedPreferences
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,10 +20,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +48,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.ui.ElderButton
-import com.lelebox.app.ui.ElderGreen
 import kotlin.math.abs
 
 /** 2048 入口（L1 原生）：滑动 + 四方向大按钮双操作，最高分存档，合并动画可关 */
@@ -159,15 +167,15 @@ fun Game2048Screen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 四方向大按钮（老年双操作）
+        // 极简方向键（老年双操作）：tonal 圆形 + 细箭头
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            DirButton("↑") { doMove(Dir.UP) }
+            MinimalDirButton(Dir.UP) { doMove(Dir.UP) }
             Row {
-                DirButton("←") { doMove(Dir.LEFT) }
-                Spacer(Modifier.width(16.dp))
-                DirButton("→") { doMove(Dir.RIGHT) }
+                MinimalDirButton(Dir.LEFT) { doMove(Dir.LEFT) }
+                Spacer(Modifier.width(14.dp))
+                MinimalDirButton(Dir.RIGHT) { doMove(Dir.RIGHT) }
             }
-            DirButton("↓") { doMove(Dir.DOWN) }
+            MinimalDirButton(Dir.DOWN) { doMove(Dir.DOWN) }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -222,19 +230,37 @@ fun Game2048Screen(
     }
 }
 
+/** 极简方向键：tonal 圆形 + 主色细箭头 + 按压缩放 */
 @Composable
-private fun DirButton(text: String, onClick: () -> Unit) {
-    ElderButton(
-        text = text,
-        onClick = onClick,
+private fun MinimalDirButton(dir: Dir, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.92f else 1f)
+    Box(
         modifier = Modifier
-            .width(76.dp)
-            .height(76.dp),
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-            containerColor = ElderGreen,
-            contentColor = Color.White,
-        ),
-    )
+            .size(64.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+            .clickable(interactionSource = interaction, indication = ripple()) { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = DirArrows.of(dir),
+            contentDescription = when (dir) {
+                Dir.UP -> "向上滑动"
+                Dir.DOWN -> "向下滑动"
+                Dir.LEFT -> "向左滑动"
+                Dir.RIGHT -> "向右滑动"
+            },
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(30.dp),
+        )
+    }
 }
 
 @Composable

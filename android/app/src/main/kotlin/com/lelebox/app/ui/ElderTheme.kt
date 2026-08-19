@@ -78,24 +78,12 @@ private val LightColors = lightColorScheme(
     errorContainer = ErrorSoft,
 )
 
-private val HighContrastColors = lightColorScheme(
-    primary = Color(0xFF000000),
-    onPrimary = Color.White,
-    secondary = Color(0xFFFFD600),
-    background = Color.Black,
-    onBackground = Color.White,
-    surface = Color.Black,
-    onSurface = Color.White,
-    error = Color(0xFFFFB4AB),
-)
-
 @Composable
 fun ElderTheme(
     fontScale: FontScale,
-    highContrast: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val colors = if (highContrast) HighContrastColors else LightColors
+    val colors = LightColors
     val f = fontScale.factor
     val base = Typography()
 

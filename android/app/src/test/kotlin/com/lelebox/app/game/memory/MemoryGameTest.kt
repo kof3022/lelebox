@@ -7,13 +7,13 @@ import org.junit.Test
 class MemoryGameTest {
 
     @Test
-    fun `board contains exactly two of each face`() {
+    fun `board contains exactly two of each animal`() {
         for (level in MemoryLevel.entries) {
             val board = buildMemoryBoard(level)
             assertEquals(level.pairs * 2, board.size)
-            val counts = board.groupingBy { it }.eachCount()
+            val counts = board.groupingBy { it.id }.eachCount()
             assertEquals(level.pairs, counts.size)
-            assertTrue("每张图案应恰好出现 2 次", counts.values.all { it == 2 })
+            assertTrue("每只动物应恰好出现 2 次", counts.values.all { it == 2 })
         }
     }
 

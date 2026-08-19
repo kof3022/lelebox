@@ -9,6 +9,7 @@ class Game2048Test {
 
     private fun boardOf(vararg values: Int): Game2048 {
         val g = Game2048()
+        g.addTiles = false // 纯逻辑测试：禁止随机补牌，保证确定性
         values.forEachIndexed { i, v -> g.board[i] = v }
         return g
     }
@@ -122,10 +123,12 @@ class Game2048Test {
 
     @Test
     fun `reaching 2048 marks won`() {
-        val g = Game2048()
-        // 直接构造 1024+1024 一行，滑动后合成 2048
-        g.board[0] = 1024
-        g.board[1] = 1024
+        val g = boardOf(
+            1024, 1024, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        )
         g.move(Dir.LEFT)
         assertEquals(2048, g.board[0])
         assertTrue(g.won)

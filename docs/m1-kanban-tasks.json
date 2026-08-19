@@ -1,0 +1,134 @@
+[
+  {
+    "id": "m1-01",
+    "title": "【M1】记忆翻牌（原生）",
+    "description": "L1 原生 Compose 实现：简单 6 对 / 困难 8 对两档；翻牌/匹配/获胜逻辑；步数最优存档；TalkBack 标注。",
+    "prompt": "在 乐龄游戏盒 android/app 工程中实现记忆翻牌游戏（原生 Compose）：1) 两档难度（6 对 / 8 对）；2) 卡面用大号象形 emoji；3) 单击翻牌、两张不匹配自动翻回（约 0.9s）；4) 全部配对后展示「你真棒！」+ 步数，并保存最优步数到 SharedPreferences(game_saves, key memory_best_<LEVEL>)；5) 所有卡片带 contentDescription 支持 TalkBack；6) 无倒计时、无失败惩罚。接入 GameShellActivity 的 NATIVE 分支。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-02",
+    "title": "【M1】2048 原生版",
+    "description": "L1 原生 Compose：棋盘合并逻辑、滑动手势 + 四方向大按钮双操作、合并动画（可关）、最高分存档。",
+    "prompt": "在 乐龄游戏盒 android/app 工程中实现 2048 原生 Compose 版（参考 gabrielecirulli/2048 的 MIT 算法，不复制其代码）：1) 4x4 棋盘、上下左右滑动合并；2) 同时提供四个大方向按钮（老年双操作）；3) 合并动画（设置可关）；4) 最高分存档 SharedPreferences(game_saves)；5) 数字用大字号、高分不设失败惩罚；6) TalkBack 可读。接入 GameShellActivity NATIVE 分支（替换 m1-01 之后的占位）。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-03",
+    "title": "【M1】数独原生版",
+    "description": "L1 原生 Compose：三档难度题目生成、按钮式数字输入（非键盘）、候选数、错误提示、无计时。",
+    "prompt": "在 乐龄游戏盒 android/app 工程中实现数独原生 Compose 版：1) 三档难度（简单/中等/困难）随机题目生成（参考 sgtpuzzles 算法思想，不复制代码）；2) 数字输入用 1-9 大按钮而非软键盘；3) 候选数标注；4) 错误高亮提示；5) 无计时无惩罚，可随时退出自动保存进度（game_saves）；6) 单元格/按钮 TalkBack 可读。接入 GameShellActivity NATIVE 分支。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-04",
+    "title": "【M1】纸牌接龙 H5",
+    "description": "L2 H5：选定并审计开源 Klondike 实现（协议合规/无广告），老年 CSS 适配，内置 assets/games/solitaire。",
+    "prompt": "为 乐龄游戏盒 选定一款开源 H5 纸牌接龙（Klondike）实现并接入 L2 管线：1) 按 docs/02 审计表规则选型（MIT/Apache/GPL、无广告 SDK、无网络依赖）；2) 下载内置到 android/app/src/main/assets/games/solitaire/；3) 在 GameShellActivity 注册（Games.kt 加 entry，kind=WEB）；4) 老年适配：放大牌面、单张翻牌、高亮可动牌、隐藏无关元素；5) 登记 THIRD_PARTY_NOTICES.md（来源/协议/改动清单）。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-05",
+    "title": "【M1】游戏壳打磨：帮助/设置联动",
+    "description": "游戏壳顶栏补齐「帮助/字体/音量」；字号三档与高对比度设置传入原生游戏与 H5 注入。",
+    "prompt": "打磨 乐龄游戏盒 游戏壳（GameShellActivity）：1) 顶栏加「帮助」按钮，弹出大字图文一屏说明（docs/01 §A 首次进入自动显示）；2) 将 MainActivity 设置页的 FontScale 三档与高对比度传入游戏壳：原生游戏通过 LocalFontScale/主题生效，H5 游戏按档位动态注入放大 CSS；3) 音量说明与系统音量联动按钮（M1 可只做入口）。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-06",
+    "title": "【M1】统一存档与清进度联动",
+    "description": "game_saves 键规范、四款游戏存档读写规范、设置页清空进度覆盖 H5 localStorage 与原生存档。",
+    "prompt": "统一 乐龄游戏盒 存档规范：1) 制定 game_saves SharedPreferences 键命名规范（native_<game>_<key> / h5_<game>_<key>）并写入 docs/01；2) 原生游戏存档读写遵循该规范；3) 设置页「清空所有游戏进度」同时清除 SharedPreferences 与各 H5 游戏的 localStorage（经 WebView 清除或 JS 桥）；4) 确认零权限不受影响。完成后跑 assembleDebug 验证并提交推送。",
+    "status": "todo",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-07",
+    "title": "【M1】无障碍走查（TalkBack）",
+    "description": "四款游戏 TalkBack 用例逐项跑通（docs/03 §7）；按钮操作模式默认开启。",
+    "prompt": "对 乐龄游戏盒 四款第一批游戏执行无障碍走查（docs/03 §5、§7）：1) TalkBack 可完整完成「进入游戏→玩一局→返回」；2) 焦点顺序正确；3) H5 游戏注入 role/aria 标注；4) 每款游戏提供按钮操作模式；5) 输出走查报告到 docs/06-无障碍走查报告.md，列明每款游戏通过项与遗留项。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "read-only"
+  },
+  {
+    "id": "m1-08",
+    "title": "【M1】真机矩阵测试",
+    "description": "2 台中低端真机 + 1 台开启系统大字体；执行验收清单 A/B/C（docs/01）。",
+    "prompt": "对 乐龄游戏盒 M1 版本执行真机矩阵测试：2 台 4-8 年前中低端机型 + 1 台开启系统大字体；按 docs/01 §A/B/C 验收清单逐项打勾（老年可用性/产品红线/技术）；飞行模式下全部游戏可玩；输出测试报告 docs/07-真机测试报告.md。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "read-only"
+  },
+  {
+    "id": "m1-09",
+    "title": "【M1】老年试玩问卷",
+    "description": "≥3 位 60+ 真实用户试玩，回收问卷（docs/01 §D）。",
+    "prompt": "组织 ≥3 位 60 岁以上真实用户试玩 乐龄游戏盒 M1 版本，按 docs/01 §D 问卷（字号可读性/按钮易点性/玩法易学性/常玩意愿）回收并汇总为 docs/08-老年试玩问卷汇总.md，输出改进建议清单供 M2 排期。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "read-only"
+  },
+  {
+    "id": "m1-10",
+    "title": "【M1】协议登记与审计推进",
+    "description": "THIRD_PARTY_NOTICES 更新（纸牌 H5 接入）、审计表状态从「待核实」推进到「已接入/仅参考」。",
+    "prompt": "更新 乐龄游戏盒 协议文档：1) 将 M1 实际接入的资源（纸牌 H5 等）登记进 THIRD_PARTY_NOTICES.md（来源/协议/改动清单）；2) docs/02 审计表把已核实资源状态推进（待核实→已接入/仅参考/弃用并注明原因）；3) 校验全部接入资源符合 §1 审计规则（无广告、协议允许）。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "read-only"
+  },
+  {
+    "id": "m1-11",
+    "title": "【M1】release 构建验证",
+    "description": "混淆后 WebView/JS 桥回归；R8 规则补充（ElderBridge keep）。",
+    "prompt": "对 乐龄游戏盒 执行 release 构建验证：1) 补充 ProGuard 规则（ElderBridge @JavascriptInterface 保持）；2) 跑 ./gradlew assembleRelease；3) 用 aapt/解包核对 APK 内 assets 完整、无权限新增；4) 记录 release 体积；5) 提交并推送。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  },
+  {
+    "id": "m1-12",
+    "title": "【M1】发布 v0.2.0-m1",
+    "description": "版本号 0.2.0-m1、图标/启动图确认、GitHub Releases 草案 + 更新 README/规划状态。",
+    "prompt": "发布 乐龄游戏盒 M1 版本：1) versionName 升为 0.2.0-m1、versionCode 2；2) 确认图标/启动图（scripts/generate_icons.ps1 产物）；3) 更新 README 里程碑状态与 docs/01 验收勾选情况；4) 在 GitHub kof3022/lelebox 创建 v0.2.0-m1 Release 草案并附 APK；5) 提交并推送所有变更。",
+    "status": "backlog",
+    "createdAt": 1755585600000,
+    "updatedAt": 1755585600000,
+    "executions": [],
+    "permission": "workspace-write"
+  }
+]

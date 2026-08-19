@@ -167,14 +167,15 @@ fun Game2048Screen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 极简方向键（老年双操作）：tonal 圆形 + 细箭头
+        // 极简方向键（老年双操作）：十字对称排布，上下/左右间距一致
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             MinimalDirButton(Dir.UP) { doMove(Dir.UP) }
-            Row {
+            Spacer(Modifier.height(28.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                 MinimalDirButton(Dir.LEFT) { doMove(Dir.LEFT) }
-                Spacer(Modifier.width(14.dp))
                 MinimalDirButton(Dir.RIGHT) { doMove(Dir.RIGHT) }
             }
+            Spacer(Modifier.height(28.dp))
             MinimalDirButton(Dir.DOWN) { doMove(Dir.DOWN) }
         }
 

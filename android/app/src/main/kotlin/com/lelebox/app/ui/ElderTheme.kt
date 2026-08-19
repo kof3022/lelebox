@@ -49,7 +49,6 @@ val ElderOrangeSoft = Color(0xFFF0E2D2)
 
 // 游戏身份色（去饱和、与暖底和谐；docs/03 §3）
 val Game2048 = Color(0xFF3E8E7E)           // 青绿
-val GameSolitaire = Color(0xFFC4623C)      // 陶土
 val GameSudoku = Color(0xFF4A6FA5)         // 雾蓝
 val GameMemory = Color(0xFF7A5C9E)         // 灰紫
 

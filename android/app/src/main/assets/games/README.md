@@ -1,8 +1,10 @@
 # assets/games —— L2 离线 H5 游戏目录
 
-每个子目录一款 H5 游戏，经 GameShellActivity 的 WebView 加载（`file:///android_asset/games/<id>/index.html`）。
+> 当前为空：早期 2048（H5 冒烟）与纸牌接龙（自研 H5）均已移除，
+> 第一批游戏现全为 L1 原生（2048/数独/记忆翻牌）。
+> 该目录保留用于未来接入 H5 开源游戏（M2 起），接入规范如下。
 
-## 接入规范（M1 起严格执行）
+## 接入规范（未来接入时严格执行）
 
 1. 目录命名 = 游戏 id（见 `Games.kt`）。
 2. 入口必须为 `index.html`。
@@ -10,9 +12,3 @@
 4. 禁止引入任何网络资源（字体/CDN/统计）——运行时 `blockNetworkLoads=true` 会直接失败，务必**本地化**。
 5. 接入后在根目录 `THIRD_PARTY_NOTICES.md` 登记（来源/协议/改动清单）。
 6. 打包体积：单个游戏 ≤ 3MB（超出需瘦身）。
-
-## 当前内容
-
-| 目录 | 游戏 | 来源 | 协议 | 状态 |
-|------|------|------|------|------|
-| `2048/` | 2048（H5） | [gabrielecirulli/2048](https://github.com/gabrielecirulli/2048) | MIT | ✅ M0 冒烟验证；M1 起替换为原生版 |

@@ -4,10 +4,9 @@ import androidx.compose.ui.graphics.Color
 import com.lelebox.app.R
 import com.lelebox.app.ui.Game2048
 import com.lelebox.app.ui.GameMemory
-import com.lelebox.app.ui.GameSolitaire
 import com.lelebox.app.ui.GameSudoku
 
-/** 游戏接入层：L1 原生（Compose） / L2 离线 H5（WebView） */
+/** 游戏接入层：L1 原生（Compose） / L2 离线 H5（WebView，预留） */
 enum class GameKind { NATIVE, WEB }
 
 /** 游戏注册表条目 */
@@ -21,12 +20,12 @@ data class GameEntry(
     val accent: Color,
     /** 矢量图标（即梦生成 PNG 后可替换为位图资源，见 docs/09） */
     val iconRes: Int? = null,
-    /** WEB 游戏：assets 内相对路径，如 "games/solitaire/index.html" */
+    /** WEB 游戏：assets 内相对路径，如 "games/xxx/index.html" */
     val assetPath: String? = null,
 )
 
 object Games {
-    /** 第一批（M1）：纸牌接龙=自研 H5，2048/数独/记忆翻牌=原生 Compose */
+    /** 第一批（M1，2025-08 现状）：2048/数独/记忆翻牌原生（纸牌接龙已于 v0.2.2 移除） */
     val firstBatch = listOf(
         GameEntry(
             id = "2048",
@@ -37,17 +36,6 @@ object Games {
             emoji = "🔢",
             accent = Game2048,
             iconRes = R.drawable.ic_game_2048,
-        ),
-        GameEntry(
-            id = "solitaire",
-            title = "纸牌接龙",
-            subtitle = "把牌按顺序收进家",
-            help = "点一下牌堆翻牌；点一张牌选中（亮黄边），再点目标位置放牌。红黑花色交替往下摆，同花色从小到大收进右上角四个家。全部收完就赢啦！",
-            kind = GameKind.WEB,
-            emoji = "🃏",
-            accent = GameSolitaire,
-            iconRes = R.drawable.ic_game_solitaire,
-            assetPath = "games/solitaire/index.html",
         ),
         GameEntry(
             id = "sudoku",

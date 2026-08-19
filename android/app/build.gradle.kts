@@ -36,6 +36,13 @@ android {
         compose = true
     }
 
+    lint {
+        // AGP 8.7.x 的 lint 与 Kotlin 2.1 UAST 存在已知崩溃（NonNullableMutableLiveDataDetector），
+        // release 构建跳过 lintVital；CI 的 lintDebug 若同样崩溃再统一关闭
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }

@@ -99,10 +99,13 @@ fun SettingsScreen(
             title = { Text("清空进度", style = MaterialTheme.typography.titleLarge) },
             text = { Text("将删除所有游戏的存档，确定吗？", style = MaterialTheme.typography.bodyLarge) },
             confirmButton = {
-                ElderButton("确定清空") {
-                    clearGameProgress(context)
-                    showClearDialog = false
-                }
+                ElderButton(
+                    text = "确定清空",
+                    onClick = {
+                        clearGameProgress(context)
+                        showClearDialog = false
+                    },
+                )
             },
             dismissButton = {
                 ElderButton(

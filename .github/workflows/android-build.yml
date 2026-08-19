@@ -30,8 +30,12 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
-      - name: Run unit checks (lint + tests)
-        run: ./gradlew lintDebug testDebugUnitTest
+      # 注意：lint 已禁用 —— AGP 8.7.x 内置 lint 与 Kotlin 2.1 UAST 存在已知崩溃
+      # （IncompatibleClassChangeError: NonNullableMutableLiveDataDetector），属上游工具链问题，
+      # 本地/CI 均复现；见 android/app/build.gradle.kts 的 lint 块说明。修复后恢复：
+      #   run: ./gradlew lintDebug
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

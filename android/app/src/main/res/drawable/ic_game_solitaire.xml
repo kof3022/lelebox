@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 纸牌接龙图标：两张开合牌面（陶土 #C4623C / 浅面 #F6E7E0） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F6E7E0"
+        android:pathData="M10,10 h88 a12,12 0 0 1 12,12 v64 a12,12 0 0 1 -12,12 h-88 a12,12 0 0 1 -12,-12 v-64 a12,12 0 0 1 12,-12 z" />
+    <!-- 后牌（右，微旋） -->
+    <group
+        android:rotation="14"
+        android:pivotX="66"
+        android:pivotY="62">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#C4623C"
+            android:strokeWidth="4"
+            android:pathData="M46,34 h36 a8,8 0 0 1 8,8 v40 a8,8 0 0 1 -8,8 h-36 a8,8 0 0 1 -8,-8 v-40 a8,8 0 0 1 8,-8 z" />
+    </group>
+    <!-- 前牌（左，微旋） -->
+    <group
+        android:rotation="-10"
+        android:pivotX="42"
+        android:pivotY="60">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#C4623C"
+            android:strokeWidth="4"
+            android:pathData="M24,34 h36 a8,8 0 0 1 8,8 v40 a8,8 0 0 1 -8,8 h-36 a8,8 0 0 1 -8,-8 v-40 a8,8 0 0 1 8,-8 z" />
+        <path
+            android:fillColor="#C4623C"
+            android:pathData="M34,46 h12 a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-12 a4,4 0 0 1 -4,-4 v-8 a4,4 0 0 1 4,-4 z" />
+        <path
+            android:fillColor="#C4623C"
+            android:pathData="M34,64 h12 a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-12 a4,4 0 0 1 -4,-4 v-8 a4,4 0 0 1 4,-4 z" />
+    </group>
+</vector>

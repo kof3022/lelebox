@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderTheme
 import com.lelebox.app.ui.ElderTopBar
 import com.lelebox.app.ui.FontScale
+import com.lelebox.app.ui.parseFontScale
 
 /**
  * 游戏壳（L1/L2 共用入口）：
@@ -64,13 +66,10 @@ class GameShellActivity : ComponentActivity() {
             return
         }
         val game = Games.byId(gameId)
-        val fontScale = FontScale.valueOf(
-            settingsPrefs.getString("font_scale", FontScale.STANDARD.name) ?: FontScale.STANDARD.name,
-        )
+        val fontScale = parseFontScale(settingsPrefs.getString("font_scale", null))
         val highContrast = settingsPrefs.getBoolean("high_contrast", false)
 
         setContent {
-            var showExitConfirm by remember { mutableStateOf(false) }
             var showHelp by remember { mutableStateOf(false) }
             val audio = LocalContext.current.getSystemService(AudioManager::class.java)
 
@@ -82,14 +81,14 @@ class GameShellActivity : ComponentActivity() {
                 }
             }
 
-            // 物理返回键：一律走二次确认
-            BackHandler { showExitConfirm = true }
+            // 物理返回键：直接退出（进度自动保存）
+            BackHandler { finish() }
 
             ElderTheme(fontScale = fontScale, highContrast = highContrast) {
                 Column(Modifier.fillMaxSize()) {
                     ElderTopBar(
                         title = game.title,
-                        onBack = { showExitConfirm = true },
+                        onBack = { finish() },
                         onRight = { showHelp = true },
                         rightText = "帮助",
                     )
@@ -117,33 +116,6 @@ class GameShellActivity : ComponentActivity() {
                 }
             }
 
-            if (showExitConfirm) {
-                AlertDialog(
-                    onDismissRequest = { showExitConfirm = false },
-                    title = { Text("要退出吗？", style = MaterialTheme.typography.titleLarge) },
-                    text = { Text("进度会自动保存，下次接着玩。", style = MaterialTheme.typography.bodyLarge) },
-                    confirmButton = {
-                        ElderButton(
-                            text = "退出",
-                            onClick = {
-                                showExitConfirm = false
-                                finish()
-                            },
-                        )
-                    },
-                    dismissButton = {
-                        ElderButton(
-                            text = "继续玩",
-                            onClick = { showExitConfirm = false },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface,
-                            ),
-                        )
-                    },
-                )
-            }
-
             if (showHelp) {
                 AlertDialog(
                     onDismissRequest = { showHelp = false },
@@ -151,13 +123,19 @@ class GameShellActivity : ComponentActivity() {
                     text = {
                         Column {
                             Text(game.help, style = MaterialTheme.typography.bodyLarge)
-                            Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(18.dp))
+                            Text(
+                                "声音大小",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(8.dp))
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 ElderButton(
-                                    text = "🔉",
+                                    text = "小声一点",
                                     onClick = {
                                         audio?.adjustStreamVolume(
                                             AudioManager.STREAM_MUSIC,
@@ -165,10 +143,14 @@ class GameShellActivity : ComponentActivity() {
                                             0,
                                         )
                                     },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                    ),
                                 )
-                                Text("音量", style = MaterialTheme.typography.titleMedium)
                                 ElderButton(
-                                    text = "🔊",
+                                    text = "大声一点",
                                     onClick = {
                                         audio?.adjustStreamVolume(
                                             AudioManager.STREAM_MUSIC,
@@ -176,8 +158,15 @@ class GameShellActivity : ComponentActivity() {
                                             0,
                                         )
                                     },
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "点右边变大，点左边变小",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     },
                     confirmButton = {
@@ -196,14 +185,14 @@ class GameShellActivity : ComponentActivity() {
 
     private fun createWebView(context: Context, game: GameEntry, fontScale: FontScale): WebView {
         val textZoom = when (fontScale) {
+            FontScale.SMALL -> 115
             FontScale.STANDARD -> 130
             FontScale.LARGE -> 150
-            FontScale.XLARGE -> 175
         }
         val cssFactor = when (fontScale) {
+            FontScale.SMALL -> 0.9f
             FontScale.STANDARD -> 1.0f
             FontScale.LARGE -> 1.25f
-            FontScale.XLARGE -> 1.6f
         }
         return WebView(context).apply {
             webView = this

@@ -40,9 +40,21 @@
 # 需要 JDK 17 + Android SDK（ANDROID_HOME）
 cd android
 ./gradlew assembleDebug        # 产出 app/build/outputs/apk/debug/app-debug.apk
-./gradlew assembleRelease      # 发布版（含混淆瘦身）
+./gradlew assembleRelease      # 发布版（含混淆瘦身，配置签名后产出 app-release.apk）
+./gradlew testDebugUnitTest    # 游戏逻辑单元测试（2048/数独/记忆翻牌，15 个用例）
 ```
 
+> **Windows 中文路径提示**：
+> 1. 仓库目录含中文（乐龄游戏盒），构建已加 `android.overridePathCheck=true`。
+> 2. **单元测试**的测试 JVM 在中文路径下会报 `ClassNotFoundException`（Gradle 工作进程 classpath 编码问题），
+>    用 ASCII 目录联接规避：
+>    ```powershell
+>    New-Item -ItemType Junction -Path C:\lelebox-android -Target <本仓库>\android
+>    cd C:\lelebox-android; .\gradlew.bat testDebugUnitTest
+>    ```
+> 3. `lint` 当前不可用：AGP 8.7.x 内置 lint 与 Kotlin 2.1 UAST 存在已知崩溃（NonNullableMutableLiveDataDetector），
+>    本地与 CI 均已禁用（见 CI 工作流注释）；待 AGP 升级后恢复。
+>
 > 中国大陆网络提示：直连 GitHub 可能失败。下载 Gradle 发行版用 `services.gradle.org`（可达）；拉取 GitHub 资源走镜像前缀 `https://gh-proxy.com/https://github.com/...`；Gradle 依赖走 `google()`（dl.google.com）与 `mavenCentral()`（均可达）。
 
 ## 里程碑

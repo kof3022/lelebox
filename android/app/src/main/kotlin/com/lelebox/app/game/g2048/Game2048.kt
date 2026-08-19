@@ -85,8 +85,9 @@ class Game2048 {
         val changed = !board.contentEquals(before)
         if (changed) {
             addRandom()
-            over = !hasAnyMove()
         }
+        // 无论本步是否变化，都重新判定是否还能走（满盘且无相邻相等时结束）
+        over = !hasAnyMove()
         return changed
     }
 

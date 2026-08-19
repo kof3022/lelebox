@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -6,9 +7,27 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// 签名凭据从 local.properties 读取（已 gitignore，勿提交密钥）
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val hasSigning = !keystoreProps.getProperty("lelebox.keystore.path").isNullOrBlank()
+
 android {
     namespace = "com.lelebox.app"
     compileSdk = 35
+
+    signingConfigs {
+        if (hasSigning) {
+            create("release") {
+                storeFile = file(keystoreProps.getProperty("lelebox.keystore.path"))
+                storePassword = keystoreProps.getProperty("lelebox.keystore.pass")
+                keyAlias = keystoreProps.getProperty("lelebox.key.alias")
+                keyPassword = keystoreProps.getProperty("lelebox.key.pass")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.lelebox.app"
@@ -23,6 +42,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (hasSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

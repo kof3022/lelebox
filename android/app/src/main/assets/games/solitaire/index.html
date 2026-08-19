@@ -75,6 +75,7 @@
   "use strict";
   var RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
   var SUITS = ["♠","♥","♦","♣"];
+  var SUIT_NAMES = ["黑桃","红心","方块","梅花"];
   var RED = {1:true,2:false,3:true,4:false}; // ♥ ♦ red
 
   function card(r,s){ return {r:r, s:s, up:false}; }
@@ -218,6 +219,8 @@
   function cardEl(c, extra){
     var d=document.createElement("div");
     d.className="card "+(c.up?"up":"down")+(RED[c.s]?" red":" black")+(extra?(" "+extra):"");
+    d.setAttribute("role","button");
+    d.setAttribute("aria-label", c.up ? (SUIT_NAMES[c.s]+RANKS[c.r-1]) : "牌背");
     if(c.up){
       var center=document.createElement("span");
       center.textContent=SUITS[c.s];
@@ -253,6 +256,8 @@
     elFound.innerHTML="";
     for(var f=0;f<4;f++){
       var slot=document.createElement("div"); slot.className="slot";
+      slot.setAttribute("role","button");
+      slot.setAttribute("aria-label","收牌区第"+(f+1)+"格");
       var tf=topOf(state.foundations[f]);
       if(tf){ slot.appendChild(cardEl(tf,"")); }
       (function(fi){ slot.addEventListener("click", function(){ if(selected) moveSelectedToFoundation(); }); })(f);
@@ -262,6 +267,8 @@
     elTab.innerHTML="";
     for(var p=0;p<7;p++){
       var pile=document.createElement("div"); pile.className="pile"+(state.tableau[p].length?"":" empty");
+      pile.setAttribute("role","button");
+      pile.setAttribute("aria-label","桌牌第"+(p+1)+"列");
       for(var i=0;i<state.tableau[p].length;i++){
         var c=state.tableau[p][i];
         var el=cardEl(c, (selected && selected.pile==='t' && selected.index===i) ? "selected" : "");

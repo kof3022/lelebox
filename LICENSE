@@ -1,0 +1,24 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+
+乐龄游戏盒 (LeLeBox) — 老年游戏聚合 APP
+Copyright (C) 2025 LeLeBox contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+---
+说明：
+- 本项目整体采用 GPL-3.0-or-later，以兼容接入的 GPL 系开源游戏资源。
+- MIT / Apache-2.0 / BSD / CC0 的第三方代码可并入本项目，需在
+  THIRD_PARTY_NOTICES.md 中保留其原始版权与许可声明。
+- 完整许可文本：https://www.gnu.org/licenses/gpl-3.0.txt

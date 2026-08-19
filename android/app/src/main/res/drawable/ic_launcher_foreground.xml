@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标前景：白色手柄简形（配 @color/ic_launcher_background 深绿底） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 手柄机身 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,42 h32 a10,10 0 0 1 10,10 v4 a10,10 0 0 1 -10,10 h-32 a10,10 0 0 1 -10,-10 v-4 a10,10 0 0 1 10,-10 z" />
+    <!-- 方向键 -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M44,52 h5 v10 h-5 z M42,54 h9 v5 h-9 z" />
+    <!-- 右侧两枚按键 -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M64,56 m-4,0 a4,4 0 1 1 8,0 a4,4 0 1 1 -8,0" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M73,63 m-4,0 a4,4 0 1 1 8,0 a4,4 0 1 1 -8,0" />
+</vector>

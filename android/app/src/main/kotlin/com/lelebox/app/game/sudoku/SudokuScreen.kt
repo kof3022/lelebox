@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
+import com.lelebox.app.ui.ErrorSoft
+import com.lelebox.app.ui.GameSudoku
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
@@ -305,7 +307,7 @@ private fun NumPadButton(text: String, modifier: Modifier = Modifier, onClick: (
         onClick = onClick,
         modifier = modifier.height(64.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF1565C0),
+            containerColor = GameSudoku,
             contentColor = Color.White,
         ),
     )
@@ -323,9 +325,9 @@ private fun SudokuCell(
     modifier: Modifier = Modifier,
 ) {
     val bg = when {
-        isError -> Color(0xFFFFCDD2)
+        isError -> ErrorSoft
         isSelected -> Color(0xFFFFF8E1)
-        else -> if (isGiven) Color(0xFFEDEDED) else Color.White
+        else -> if (isGiven) Color(0xFFF0EDE6) else Color.White
     }
     val desc = when {
         isGiven -> "第${index + 1}格，已给数字 $value"
@@ -338,7 +340,7 @@ private fun SudokuCell(
             .background(bg)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) ElderGreen else Color(0xFFB0B0B0),
+                color = if (isSelected) ElderGreen else Color(0xFFD8CFC2),
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -347,7 +349,7 @@ private fun SudokuCell(
             Text(
                 "$value",
                 fontSize = 22.sp,
-                color = if (isGiven) Color(0xFF3B3B3B) else Color(0xFF1565C0),
+                color = if (isGiven) Color(0xFF2E2A25) else GameSudoku,
                 fontWeight = if (isGiven) FontWeight.Bold else FontWeight.Normal,
             )
         } else if (candidates.isNotEmpty()) {

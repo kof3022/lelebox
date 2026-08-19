@@ -174,6 +174,7 @@ fun Game2048Screen(
         Text(
             "向左向右滑动，或点方向按钮；相同数字碰到一起会合并",
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }

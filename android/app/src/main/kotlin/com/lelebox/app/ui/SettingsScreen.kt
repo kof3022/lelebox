@@ -1,6 +1,7 @@
 package com.lelebox.app.ui
 
 import android.content.Context
+import android.webkit.WebStorage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -122,5 +123,12 @@ fun SettingsScreen(
 }
 
 private fun clearGameProgress(context: Context) {
+    // 原生与 H5（经 JS 桥）存档都在 game_saves
     context.getSharedPreferences("game_saves", Context.MODE_PRIVATE).edit().clear().apply()
+    // H5 游戏自带的 localStorage / WebStorage 一并清空
+    try {
+        WebStorage.getInstance().deleteAllData()
+    } catch (_: Exception) {
+        // 忽略清理失败（个别机型 WebStorage 不可用）
+    }
 }

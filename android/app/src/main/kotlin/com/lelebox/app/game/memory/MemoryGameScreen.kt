@@ -92,7 +92,7 @@ private fun MemoryBoard(
     var matched by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var moves by remember { mutableStateOf(0) }
     var locked by remember { mutableStateOf(false) }
-    var best by remember { mutableStateOf(prefs.getInt("memory_best_${level.name}", Int.MAX_VALUE)) }
+    var best by remember { mutableStateOf(prefs.getInt("native_memory_best_${level.name}", Int.MAX_VALUE)) }
     var isNewRecord by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -134,7 +134,7 @@ private fun MemoryBoard(
     // 获胜：更新最优步数（无计时、无惩罚，只记最优）
     LaunchedEffect(won) {
         if (won && moves < best) {
-            prefs.edit().putInt("memory_best_${level.name}", moves).apply()
+            prefs.edit().putInt("native_memory_best_${level.name}", moves).apply()
             best = moves
             isNewRecord = true
         }

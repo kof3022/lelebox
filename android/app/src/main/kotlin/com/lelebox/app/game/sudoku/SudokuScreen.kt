@@ -1,0 +1,401 @@
+package com.lelebox.app.game.sudoku
+
+import android.content.SharedPreferences
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.lelebox.app.ui.ElderButton
+import com.lelebox.app.ui.ElderGreen
+import org.json.JSONArray
+import org.json.JSONObject
+import kotlin.random.Random
+
+private const val SAVE_KEY = "native_sudoku_state"
+
+/** 数独入口（L1 原生）：按钮式输入、候选数、提示、错误高亮、无计时、自动存档 */
+@Composable
+fun SudokuScreen(
+    prefs: SharedPreferences,
+    modifier: Modifier = Modifier,
+) {
+    var level by remember { mutableStateOf<SudokuLevel?>(null) }
+    when (val lv = level) {
+        null -> SudokuLevelSelect(onStart = { level = it }, modifier = modifier)
+        else -> SudokuBoard(lv, prefs, onBackToLevels = { level = null }, modifier = modifier)
+    }
+}
+
+@Composable
+private fun SudokuLevelSelect(
+    onStart: (SudokuLevel) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("🧩", fontSize = 56.sp)
+        Spacer(Modifier.height(16.dp))
+        Text("数独", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "每行、每列、每个九宫格里，1 到 9 各出现一次。慢慢想，不着急。",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(32.dp))
+        SudokuLevel.entries.forEach { lv ->
+            ElderButton(text = lv.label, onClick = { onStart(lv) }, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+private data class GameData(val puzzle: IntArray, val solved: IntArray, val current: IntArray)
+
+@Composable
+private fun SudokuBoard(
+    level: SudokuLevel,
+    prefs: SharedPreferences,
+    onBackToLevels: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var round by remember { mutableIntStateOf(0) }
+    val init = remember(level, round) {
+        val saved = loadState(prefs, level)
+        if (saved != null) {
+            saved
+        } else {
+            val (p, s) = Sudoku.generatePuzzle(level)
+            GameData(p, s, p.copyOf())
+        }
+    }
+    val puzzle = init.puzzle
+    val solved = init.solved
+    var current by remember { mutableStateOf(init.current) }
+    val givens = remember(puzzle) { puzzle.indices.filter { puzzle[it] != 0 }.toSet() }
+
+    var selected by remember { mutableStateOf<Int?>(null) }
+    var candidateMode by remember { mutableStateOf(false) }
+    var cands by remember { mutableStateOf<Map<Int, Set<Int>>>(emptyMap()) }
+    var hintCount by remember { mutableIntStateOf(0) }
+
+    val errors = current.indices.filter { current[it] != 0 && current[it] != solved[it] }.toSet()
+    val won = current.all { it != 0 } && errors.isEmpty()
+
+    fun save() {
+        val o = JSONObject()
+        o.put("level", level.name)
+        val p = JSONArray()
+        val c = JSONArray()
+        puzzle.forEach { p.put(it) }
+        current.forEach { c.put(it) }
+        o.put("puzzle", p)
+        o.put("current", c)
+        prefs.edit().putString(SAVE_KEY, o.toString()).apply()
+    }
+
+    fun newGame() {
+        prefs.edit().remove(SAVE_KEY).apply()
+        selected = null
+        cands = emptyMap()
+        hintCount = 0
+        round++
+    }
+
+    fun onDigit(d: Int) {
+        val pos = selected ?: return
+        if (pos in givens) return
+        if (candidateMode) {
+            val cur = cands[pos].orEmpty()
+            val next = if (d in cur) cur - d else cur + d
+            cands = if (next.isEmpty()) cands - pos else cands + (pos to next)
+        } else {
+            current = current.copyOf().apply { this[pos] = d }
+            cands = cands - pos
+            save()
+        }
+    }
+
+    fun onClear() {
+        val pos = selected ?: return
+        if (pos in givens) return
+        if (candidateMode) {
+            cands = cands - pos
+        } else {
+            current = current.copyOf().apply { this[pos] = 0 }
+            save()
+        }
+    }
+
+    fun onHint() {
+        val wrong = current.indices.filter { current[it] != solved[it] }
+        if (wrong.isEmpty()) return
+        val pos = wrong[Random.nextInt(wrong.size)]
+        current = current.copyOf().apply { this[pos] = solved[pos] }
+        cands = cands - pos
+        hintCount++
+        save()
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // 操作行
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ElderButton(
+                text = "重新开始",
+                onClick = ::newGame,
+                modifier = Modifier.weight(1f),
+            )
+            ElderButton(
+                text = "提示",
+                onClick = ::onHint,
+                modifier = Modifier.weight(1f),
+            )
+            ElderButton(
+                text = if (candidateMode) "候选：开" else "候选：关",
+                onClick = { candidateMode = !candidateMode },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (hintCount > 0) {
+            Spacer(Modifier.height(4.dp))
+            Text("已提示 $hintCount 次", style = MaterialTheme.typography.bodyMedium)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 九宫格
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .background(Color.White)
+                .border(2.dp, Color(0xFF3B3B3B)),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                for (r in 0 until 9) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    ) {
+                        for (c in 0 until 9) {
+                            val pos = r * 9 + c
+                            val value = current[pos]
+                            SudokuCell(
+                                value = value,
+                                isGiven = pos in givens,
+                                isError = pos in errors,
+                                isSelected = selected == pos,
+                                candidates = cands[pos].orEmpty(),
+                                index = pos,
+                                onClick = { selected = pos },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // 数字大按钮（1-9 + 清除）
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            (1..5).forEach { d ->
+                NumPadButton("$d", Modifier.weight(1f)) { onDigit(d) }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            (6..9).forEach { d ->
+                NumPadButton("$d", Modifier.weight(1f)) { onDigit(d) }
+            }
+            ElderButton(
+                text = "清除",
+                onClick = ::onClear,
+                modifier = Modifier.weight(1f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
+        }
+    }
+
+    if (won) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xCC000000))
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("🎉", fontSize = 64.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("完成！你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "用时随意，慢慢想。${if (hintCount > 0) "（用了 $hintCount 次提示）" else ""}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(32.dp))
+            ElderButton(text = "再来一局", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun NumPadButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ElderButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier.height(64.dp),
+        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF1565C0),
+            contentColor = Color.White,
+        ),
+    )
+}
+
+@Composable
+private fun SudokuCell(
+    value: Int,
+    isGiven: Boolean,
+    isError: Boolean,
+    isSelected: Boolean,
+    candidates: Set<Int>,
+    index: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bg = when {
+        isError -> Color(0xFFFFCDD2)
+        isSelected -> Color(0xFFFFF8E1)
+        else -> if (isGiven) Color(0xFFEDEDED) else Color.White
+    }
+    val desc = when {
+        isGiven -> "第${index + 1}格，已给数字 $value"
+        value != 0 -> "第${index + 1}格，填了 $value"
+        else -> "第${index + 1}格，空格"
+    }
+    Box(
+        modifier = modifier
+            .semantics { contentDescription = desc }
+            .background(bg)
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = if (isSelected) ElderGreen else Color(0xFFB0B0B0),
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (value != 0) {
+            Text(
+                "$value",
+                fontSize = 22.sp,
+                color = if (isGiven) Color(0xFF3B3B3B) else Color(0xFF1565C0),
+                fontWeight = if (isGiven) FontWeight.Bold else FontWeight.Normal,
+            )
+        } else if (candidates.isNotEmpty()) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(1.dp),
+            ) {
+                for (r in 0..2) {
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                    ) {
+                        for (c in 0..2) {
+                            val d = r * 3 + c + 1
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (d in candidates) {
+                                    Text("$d", fontSize = 9.sp, color = Color(0xFF757575))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 让 9x9 网格按宽度自适应取高（方形） */
+
+private fun loadState(prefs: SharedPreferences, level: SudokuLevel): GameData? {
+    val raw = prefs.getString(SAVE_KEY, null) ?: return null
+    return try {
+        val o = JSONObject(raw)
+        if (o.getString("level") != level.name) return null
+        val p = o.getJSONArray("puzzle")
+        val c = o.getJSONArray("current")
+        val puzzle = IntArray(81) { p.getInt(it) }
+        val current = IntArray(81) { c.getInt(it) }
+        val solved = Sudoku.solve(puzzle) ?: return null
+        GameData(puzzle, solved, current)
+    } catch (e: Exception) {
+        null
+    }
+}

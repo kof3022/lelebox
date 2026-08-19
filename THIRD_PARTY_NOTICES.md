@@ -8,23 +8,26 @@
 
 | 资源 | 来源 | 协议 | 用途 | 改动清单 |
 |------|------|------|------|----------|
-| 2048（H5） | [gabrielecirulli/2048](https://github.com/gabrielecirulli/2048) | MIT | L2 管线验证游戏（M0 冒烟用；M1 将替换为原生版） | 未改动源码；WebView 注入老年样式 CSS（字号放大、隐藏分享按钮） |
-| 应用图标（生成的 PNG） | 自绘 | — | 启动图标 | — |
+| 应用图标（生成的 PNG + 自适应矢量） | 自绘 | — | 启动图标 | — |
+| 纸牌接龙（H5） | **本项目自研**（`assets/games/solitaire/index.html`） | 本项目 GPL-3.0-or-later | L2 纸牌接龙 | 无第三方代码；规则参考通用 Klondike 玩法 |
+| 记忆翻牌 / 2048 / 数独（原生） | **本项目自研** | 本项目 GPL-3.0-or-later | L1 原生游戏 | 算法思想参考下述 MIT 项目，未复制其代码 |
 
-## 已规划待接入（M1/M2）
+## 算法参考（未随包分发，仅参考实现思路）
 
-| 资源 | 来源 | 协议 | 用途 | 备注 |
-|------|------|------|------|------|
-| Simple-Solitaire（纸牌合集） | [TobiasBielefeld/Simple-Solitaire](https://github.com/tobiasBielefeld/Simple-Solitaire) | GPL-3.0 | 纸牌规则/素材参考（或移植 Klondike） | 引用代码需整体 GPL（本项目即 GPL，无冲突） |
-| sgtpuzzles（Simon Tatham 谜题合集） | [chrisboyle/sgtpuzzles](https://github.com/chrisboyle/sgtpuzzles) | MIT 风格 | 数独/华容道算法参考 | 仅参考算法，不复制 C 代码 |
-| antimine（扫雷） | [lucasnlm/antimine-android](https://github.com/lucasnlm/antimine-android) | Apache-2.0 | 扫雷 + 无障碍实现样板 | 参考架构与无障碍做法 |
-| HTML5-Gomoku（五子棋） | [yyjhao/HTML5-Gomoku](https://github.com/yyjhao/HTML5-Gomoku) | 开源 | L2 五子棋 | 接入前需确认 LICENSE 文件 |
-| HTML5 中国象棋 | [zhoudaqing/Chess](https://github.com/zhoudaqing/Chess) | 开源 | L2 象棋 | 同上 |
-| H5 连连看 | [WangShunYang/link-game](https://github.com/WangShunYang/link-game) | 开源 | L2 连连看 | 同上 |
-| H5 麻将接龙 | [ffalt/mah](https://github.com/ffalt/mah) | 开源 | L2 麻将接龙 | 同上 |
-| 记忆翻牌 | [bojidar-bg/simple-memory-android](https://github.com/bojidar-bg/simple-memory-android) | 开源 | L1 参考 | — |
+| 资源 | 来源 | 协议 | 参考内容 |
+|------|------|------|----------|
+| 2048（H5 原版） | [gabrielecirulli/2048](https://github.com/gabrielecirulli/2048) | MIT | 滑动合并算法思想 → 原生实现 `Game2048.kt` |
+| Simon Tatham 谜题合集 | [chrisboyle/sgtpuzzles](https://github.com/chrisboyle/sgtpuzzles) | MIT 风格 | 数独生成/求解算法思想 → 原生实现 `SudokuGame.kt` |
+| Simple-Solitaire | [TobiasBielefeld/Simple-Solitaire](https://github.com/tobiasBielefeld/Simple-Solitaire) | GPL-3.0 | Klondike 规则参考 → 自研 H5 实现 |
+| antimine（扫雷） | [lucasnlm/antimine-android](https://github.com/lucasnlm/antimine-android) | Apache-2.0 | M2 扫雷 + 无障碍实现样板（未使用） |
+| 记忆翻牌 | [bojidar-bg/simple-memory-android](https://github.com/bojidar-bg/simple-memory-android) | 开源 | 玩法参考 → 自研实现（未复制代码） |
 
-> ⚠️ 表中「开源」待接入项，M1 正式接入前必须完成协议核实（见审计表 §2），核实后方可更新本表状态。
+## 已评估弃用（审计未通过，记录在案）
+
+| 资源 | 原因 |
+|------|------|
+| kriscarilloxyz/html5-solitaire-js（含原版 SolitaireJS 系） | 仓库**无 LICENSE 文件**（审计规则 §1.1），且为 PhoneGap 年代旧代码、含大量平台适配冗余 → 弃用，改为自研 |
+| GodLeaveMe/Pixel-Memories、xosg/WebGames（长尾来源池） | LICENSE 待核实，核实前不接入 |
 
 ## 模板（新接入资源时复制此块追加）
 

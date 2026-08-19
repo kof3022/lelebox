@@ -3,6 +3,7 @@ package com.lelebox.app.game
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.media.AudioManager
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -12,26 +13,32 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.lelebox.app.game.memory.MemoryGameScreen
+import com.lelebox.app.game.g2048.Game2048Screen
+import com.lelebox.app.game.sudoku.SudokuScreen
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderTheme
 import com.lelebox.app.ui.ElderTopBar
@@ -39,12 +46,14 @@ import com.lelebox.app.ui.FontScale
 
 /**
  * 游戏壳（L1/L2 共用入口）：
- * - L2：离线 WebView 加载 assets 内 H5，断网加固 + 老年 CSS 注入 + 存档 JS 桥；
- * - L1：M1 前的原生占位页。
+ * - L2：离线 WebView 加载 assets 内 H5，断网加固 + 老年 CSS 注入（按字号档位）+ 存档 JS 桥；
+ * - L1：原生游戏分发（记忆翻牌 / 2048 / 数独）；
+ * - 设置联动：字号三档与高对比度来自「乐龄游戏盒设置」；帮助首次自动显示，含音量调节。
  */
 class GameShellActivity : ComponentActivity() {
 
     private val prefs by lazy { getSharedPreferences("game_saves", MODE_PRIVATE) }
+    private val settingsPrefs by lazy { getSharedPreferences("lelebox_settings", MODE_PRIVATE) }
     private var webView: WebView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,26 +64,50 @@ class GameShellActivity : ComponentActivity() {
             return
         }
         val game = Games.byId(gameId)
+        val fontScale = FontScale.valueOf(
+            settingsPrefs.getString("font_scale", FontScale.STANDARD.name) ?: FontScale.STANDARD.name,
+        )
+        val highContrast = settingsPrefs.getBoolean("high_contrast", false)
 
         setContent {
             var showExitConfirm by remember { mutableStateOf(false) }
+            var showHelp by remember { mutableStateOf(false) }
+            val audio = LocalContext.current.getSystemService(AudioManager::class.java)
+
+            // 首次进入自动显示帮助（大字图文）
+            LaunchedEffect(Unit) {
+                if (!settingsPrefs.getBoolean("help_shown_${game.id}", false)) {
+                    showHelp = true
+                    settingsPrefs.edit().putBoolean("help_shown_${game.id}", true).apply()
+                }
+            }
 
             // 物理返回键：一律走二次确认
             BackHandler { showExitConfirm = true }
 
-            ElderTheme(fontScale = FontScale.STANDARD, highContrast = false) {
+            ElderTheme(fontScale = fontScale, highContrast = highContrast) {
                 Column(Modifier.fillMaxSize()) {
                     ElderTopBar(
                         title = game.title,
                         onBack = { showExitConfirm = true },
+                        onRight = { showHelp = true },
+                        rightText = "帮助",
                     )
                     when (game.kind) {
                         GameKind.WEB -> AndroidView(
-                            factory = { ctx -> createWebView(ctx, game) },
+                            factory = { ctx -> createWebView(ctx, game, fontScale) },
                             modifier = Modifier.fillMaxSize(),
                         )
                         GameKind.NATIVE -> when (game.id) {
                             "memory" -> MemoryGameScreen(
+                                prefs = prefs,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            "2048" -> Game2048Screen(
+                                prefs = prefs,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            "sudoku" -> SudokuScreen(
                                 prefs = prefs,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -110,6 +143,48 @@ class GameShellActivity : ComponentActivity() {
                     },
                 )
             }
+
+            if (showHelp) {
+                AlertDialog(
+                    onDismissRequest = { showHelp = false },
+                    title = { Text("怎么玩「${game.title}」", style = MaterialTheme.typography.titleLarge) },
+                    text = {
+                        Column {
+                            Text(game.help, style = MaterialTheme.typography.bodyLarge)
+                            Spacer(Modifier.height(16.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                ElderButton(
+                                    text = "🔉",
+                                    onClick = {
+                                        audio?.adjustStreamVolume(
+                                            AudioManager.STREAM_MUSIC,
+                                            AudioManager.ADJUST_LOWER,
+                                            0,
+                                        )
+                                    },
+                                )
+                                Text("音量", style = MaterialTheme.typography.titleMedium)
+                                ElderButton(
+                                    text = "🔊",
+                                    onClick = {
+                                        audio?.adjustStreamVolume(
+                                            AudioManager.STREAM_MUSIC,
+                                            AudioManager.ADJUST_RAISE,
+                                            0,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        ElderButton("知道了", onClick = { showHelp = false })
+                    },
+                )
+            }
         }
     }
 
@@ -119,8 +194,18 @@ class GameShellActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun createWebView(context: Context, game: GameEntry): WebView =
-        WebView(context).apply {
+    private fun createWebView(context: Context, game: GameEntry, fontScale: FontScale): WebView {
+        val textZoom = when (fontScale) {
+            FontScale.STANDARD -> 130
+            FontScale.LARGE -> 150
+            FontScale.XLARGE -> 175
+        }
+        val cssFactor = when (fontScale) {
+            FontScale.STANDARD -> 1.0f
+            FontScale.LARGE -> 1.25f
+            FontScale.XLARGE -> 1.6f
+        }
+        return WebView(context).apply {
             webView = this
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -129,18 +214,18 @@ class GameShellActivity : ComponentActivity() {
             settings.allowContentAccess = false
             settings.blockNetworkLoads = true
             settings.setSupportZoom(false)
-            // 老年基础放大档（与注入 CSS 叠加）
-            settings.textZoom = 130
+            settings.textZoom = textZoom
             addJavascriptInterface(ElderBridge(prefs), "ElderBridge")
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    view?.evaluateJavascript(ELDER_CSS_JS, null)
+                    view?.evaluateJavascript(elderCssJs(cssFactor), null)
                 }
             }
             loadUrl("file:///android_asset/${game.assetPath}")
         }
+    }
 
-    /** L1 原生游戏占位（M1 替换为真实实现） */
+    /** L1 原生游戏占位（未实现列表项） */
     @Composable
     private fun NativePlaceholder(game: GameEntry) {
         Column(
@@ -158,7 +243,7 @@ class GameShellActivity : ComponentActivity() {
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
-            Text("M1 版本上线，敬请期待", style = MaterialTheme.typography.bodyLarge)
+            Text("敬请期待", style = MaterialTheme.typography.bodyLarge)
         }
     }
 
@@ -182,22 +267,26 @@ class GameShellActivity : ComponentActivity() {
             )
         }
 
-        /** 老年样式注入（docs/03 §1-§3）：放大字/按钮，隐藏分享等无关元素 */
-        private const val ELDER_CSS_JS = """
-            (function(){
-              try{
-                var css = [
-                  'html,body{font-size:20px !important;}',
-                  'button{min-width:56px !important;min-height:56px !important;font-size:1.25rem !important;}',
-                  'input[type=button]{min-width:56px !important;min-height:56px !important;font-size:1.25rem !important;}',
-                  '.share,.sharing,.share-tip{display:none !important;}'
-                ].join('');
-                var s=document.createElement('style');
-                s.type='text/css';
-                s.appendChild(document.createTextNode(css));
-                document.head.appendChild(s);
-              }catch(e){}
-            })();
-        """
+        /** 老年样式注入（docs/03 §1-§3）：按字号档位放大字/按钮，隐藏分享等无关元素 */
+        private fun elderCssJs(factor: Float): String {
+            val base = (20 * factor).toInt()
+            val btn = (24 * factor).toInt()
+            return """
+                (function(){
+                  try{
+                    var css = [
+                      'html,body{font-size:${base}px !important;}',
+                      'button{min-width:56px !important;min-height:56px !important;font-size:${btn}px !important;}',
+                      'input[type=button]{min-width:56px !important;min-height:56px !important;font-size:${btn}px !important;}',
+                      '.share,.sharing,.share-tip{display:none !important;}'
+                    ].join('');
+                    var s=document.createElement('style');
+                    s.type='text/css';
+                    s.appendChild(document.createTextNode(css));
+                    document.head.appendChild(s);
+                  }catch(e){}
+                })();
+            """
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.lelebox.app.game.sudoku
 
 import android.content.SharedPreferences
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,12 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lelebox.app.R
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
 import com.lelebox.app.ui.ErrorSoft
@@ -71,15 +74,11 @@ private fun SudokuLevelSelect(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(GameSudoku.copy(alpha = 0.14f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("🧩", fontSize = 48.sp)
-        }
+        Image(
+            painter = painterResource(R.drawable.ic_game_sudoku),
+            contentDescription = "数独",
+            modifier = Modifier.size(96.dp),
+        )
         Spacer(Modifier.height(18.dp))
         Text("数独", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(10.dp))

@@ -36,8 +36,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lelebox.app.R
 import com.lelebox.app.ui.ElderButton
-import com.lelebox.app.ui.GameMemory
 import com.lelebox.app.ui.SuccessSoft
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,15 +67,11 @@ private fun MemoryLevelSelect(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(GameMemory.copy(alpha = 0.14f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("🎴", fontSize = 48.sp)
-        }
+        Image(
+            painter = painterResource(R.drawable.ic_game_memory),
+            contentDescription = "记忆翻牌",
+            modifier = Modifier.size(96.dp),
+        )
         Spacer(Modifier.height(18.dp))
         Text("记忆翻牌", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(10.dp))

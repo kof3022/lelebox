@@ -1,10 +1,8 @@
 package com.lelebox.app.game.doudizhu
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +14,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,13 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.lelebox.app.R
 import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
@@ -59,7 +59,7 @@ fun DoudizhuScreen(
     // AI 回合驱动
     LaunchedEffect(tick) {
         while (game.phase == 1 && !game.over && game.current != 0) {
-            delay(650)
+            delay(700)
             game.aiAct()
             refresh()
         }
@@ -84,16 +84,11 @@ fun DoudizhuScreen(
     }
 
     fun onPass() {
-        if (game.playerPass() == PlayResult.OK) {
-            Sfx.click(context)
-        } else {
-            Sfx.fail(context)
-        }
+        if (game.playerPass() == PlayResult.OK) Sfx.click(context) else Sfx.fail(context)
         refresh()
     }
 
     fun onHint() {
-        // 自动选一手最小的可出组合
         val combos = game.findCombos(game.hands[0])
         val prev = game.lastCombo
         val target = if (prev == null) {
@@ -119,23 +114,18 @@ fun DoudizhuScreen(
         refresh()
     }
 
+    val role = when {
+        game.landlord == -1 -> ""
+        game.isLandlord(0) -> "你是地主"
+        else -> "你是农民"
+    }
+
     val status = when {
         game.phase == 0 -> "谁来当地主？"
         game.over -> if (game.winner == 0) "你赢啦！" else if (game.isLandlord(game.winner)) "地主赢了" else "农民赢了"
-        game.current == 0 -> if (game.lastCombo == null) "该你出牌（自由出）" else "该你出牌"
-        else -> "AI 思考中…"
+        game.current == 0 -> "该你出牌"
+        else -> "电脑思考中…"
     }
-
-    val lastText = game.lastCombo?.let { c ->
-        val name = when (c.type) {
-            ComboType.SINGLE -> "单张"; ComboType.PAIR -> "对子"; ComboType.TRIPLE -> "三张"
-            ComboType.TRIPLE_ONE -> "三带一"; ComboType.TRIPLE_TWO -> "三带二"
-            ComboType.STRAIGHT -> "顺子"; ComboType.PAIR_STRAIGHT -> "连对"
-            ComboType.PLANE -> "飞机"; ComboType.PLANE_WING -> "飞机带翅"
-            ComboType.FOUR_TWO -> "四带二"; ComboType.BOMB -> "炸弹"; ComboType.ROCKET -> "王炸"
-        }
-        "上家出了：$name ${if (c.type == ComboType.STRAIGHT || c.type == ComboType.PAIR_STRAIGHT || c.type == ComboType.PLANE || c.type == ComboType.PLANE_WING) "" else Doudizhu.rankText(c.mainRank)}"
-    } ?: ""
 
     Column(
         modifier = modifier
@@ -143,93 +133,99 @@ fun DoudizhuScreen(
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // AI 与状态区
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("电脑1：${game.hands[1].size} 张", style = MaterialTheme.typography.titleMedium)
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(status, style = MaterialTheme.typography.titleMedium, color = if (game.current == 0 && !game.over && game.phase == 1) ElderGreen else MaterialTheme.colorScheme.onSurface)
-                if (lastText.isNotEmpty()) {
-                    Text(lastText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Text("电脑2：${game.hands[2].size} 张", style = MaterialTheme.typography.titleMedium)
-        }
-        Spacer(Modifier.height(8.dp))
-
-        // 底牌/叫地主
-        if (game.phase == 0) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                game.bottom.forEach { c ->
-                    MiniCard(c, Modifier.size(46.dp, 64.dp))
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Text("底牌在上面，你要当地主吗？", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                ElderButton(text = "叫地主", onClick = { onBid(true) }, modifier = Modifier.weight(1f))
-                ElderButton(text = "不叫", onClick = { onBid(false) }, modifier = Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(8.dp))
-            Text("不叫的话电脑会决定，没人要就重新发牌", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        // 手牌区
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .height(92.dp),
-        ) {
-            game.hands[0].forEachIndexed { i, card ->
-                HandCard(
-                    card = card,
-                    selected = card in selected,
-                    onClick = {
-                        selected = if (card in selected) selected - card else selected + card
-                        Sfx.click(context)
-                        refresh()
-                    },
-                    modifier = Modifier.offset(x = (-i * 8).dp),
+        // 对手面板（左：电脑1，右：电脑2）
+        key(tick) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                OpponentPanel(
+                    name = "电脑1",
+                    role = playerRoleText(game, 1),
+                    count = game.hands[1].size,
+                    active = game.phase == 1 && !game.over && game.current == 1,
+                    last = game.lastPlays[1],
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                OpponentPanel(
+                    name = "电脑2",
+                    role = playerRoleText(game, 2),
+                    count = game.hands[2].size,
+                    active = game.phase == 1 && !game.over && game.current == 2,
+                    last = game.lastPlays[2],
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
 
         Spacer(Modifier.height(8.dp))
+        Text(status, style = MaterialTheme.typography.titleMedium, color = if (game.current == 0 && !game.over && game.phase == 1) ElderGreen else MaterialTheme.colorScheme.onSurface)
+        Text(role, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        // 操作按钮
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ElderButton(text = "提示", onClick = ::onHint, modifier = Modifier.weight(1f), minHeight = 56.dp)
-            ElderButton(
-                text = "出牌",
-                onClick = ::onPlay,
-                modifier = Modifier.weight(1f),
-                minHeight = 56.dp,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
-            ElderButton(
-                text = "不出",
-                onClick = ::onPass,
-                modifier = Modifier.weight(1f),
-                minHeight = 56.dp,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
-            ElderButton(text = "重发", onClick = ::onNewDeal, modifier = Modifier.weight(1f), minHeight = 56.dp)
+        Spacer(Modifier.height(6.dp))
+
+        // 中央出牌区：三家各自出的牌
+        key(tick) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFFF3EDE2),
+            ) {
+                Column(Modifier.padding(vertical = 6.dp, horizontal = 8.dp)) {
+                    PlayRow("电脑1", game.lastPlays[1])
+                    PlayRow("你", game.lastPlays[0])
+                    PlayRow("电脑2", game.lastPlays[2])
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // 叫地主阶段
+        if (game.phase == 0) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                game.bottom.forEach { c -> MiniCard(c, Modifier.size(44.dp, 62.dp)) }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text("底牌，你要当地主吗？", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ElderButton(text = "叫地主", onClick = { onBid(true) }, modifier = Modifier.weight(1f))
+                ElderButton(text = "不叫", onClick = { onBid(false) }, modifier = Modifier.weight(1f))
+            }
+        }
+
+        // 己方手牌（全部可见、逐个可点）
+        if (game.phase == 1) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(92.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                itemsIndexed(game.hands[0]) { _, card ->
+                    HandCard(
+                        card = card,
+                        selected = card in selected,
+                        onClick = {
+                            selected = if (card in selected) selected - card else selected + card
+                            Sfx.click(context)
+                            refresh()
+                        },
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ElderButton(text = "提示", onClick = ::onHint, modifier = Modifier.weight(1f), minHeight = 56.dp)
+                ElderButton(text = "出牌", onClick = ::onPlay, modifier = Modifier.weight(1f), minHeight = 56.dp)
+                ElderButton(text = "不出", onClick = ::onPass, modifier = Modifier.weight(1f), minHeight = 56.dp)
+                ElderButton(text = "重发", onClick = ::onNewDeal, modifier = Modifier.weight(1f), minHeight = 56.dp)
+            }
         }
     }
 
@@ -260,16 +256,105 @@ fun DoudizhuScreen(
     }
 }
 
+private fun playerRoleText(game: DoudizhuGame, p: Int): String = when {
+    game.landlord == -1 -> "—"
+    game.isLandlord(p) -> "地主"
+    else -> "农民"
+}
+
+/** 对手面板：名字 + 身份 + 手牌数 + 牌背堆 + 当前行动高亮 */
 @Composable
-private fun HandCard(card: Card, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun OpponentPanel(
+    name: String,
+    role: String,
+    count: Int,
+    active: Boolean,
+    last: Combo?,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = if (active) Color(0xFFE5EFE3) else Color(0xFFF3EDE2),
+        border = androidx.compose.foundation.BorderStroke(if (active) 2.dp else 1.dp, if (active) ElderGreen else Color(0xFFE4DBCB)),
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 牌背堆
+            Box(
+                modifier = Modifier
+                    .size(width = 26.dp, height = 36.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFB0453E)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("$count", fontSize = 12.sp, color = Color.White)
+            }
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(name, style = MaterialTheme.typography.titleMedium)
+                Text("$role · $count 张", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                last?.let { c ->
+                    Text(
+                        comboText(c),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFFB0453E),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun comboText(c: Combo): String {
+    val name = when (c.type) {
+        ComboType.SINGLE -> "单张"; ComboType.PAIR -> "对子"; ComboType.TRIPLE -> "三张"
+        ComboType.TRIPLE_ONE -> "三带一"; ComboType.TRIPLE_TWO -> "三带二"
+        ComboType.STRAIGHT -> "顺子"; ComboType.PAIR_STRAIGHT -> "连对"
+        ComboType.PLANE -> "飞机"; ComboType.PLANE_WING -> "飞机带翅"
+        ComboType.FOUR_TWO -> "四带二"; ComboType.BOMB -> "炸弹"; ComboType.ROCKET -> "王炸"
+    }
+    val seq = c.type == ComboType.STRAIGHT || c.type == ComboType.PAIR_STRAIGHT || c.type == ComboType.PLANE || c.type == ComboType.PLANE_WING
+    return if (seq) name else "$name ${Doudizhu.rankText(c.mainRank)}"
+}
+
+/** 出牌区的一行：谁 + 出的牌（小牌） */
+@Composable
+private fun PlayRow(label: String, combo: Combo?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(64.dp))
+        if (combo == null) {
+            Text("—", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                combo.cards.take(12).forEach { c ->
+                    MiniCard(c, Modifier.size(26.dp, 36.dp))
+                }
+                if (combo.cards.size > 12) {
+                    Text("…", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HandCard(card: Card, selected: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(6.dp)
     Box(
-        modifier = modifier
-            .size(46.dp, 78.dp)
+        modifier = Modifier
+            .size(44.dp, 74.dp)
             .offset(y = if (selected) (-16).dp else 0.dp)
             .clip(shape)
             .background(Color.White)
-            .border(1.dp, Color(0xFFC9BEAB), shape)
+            .border(if (selected) 2.dp else 1.dp, if (selected) ElderGreen else Color(0xFFC9BEAB), shape)
             .clickable(onClick = onClick)
             .semantics { contentDescription = "${Doudizhu.cardText(card)}${if (selected) "，已选中" else ""}" },
         contentAlignment = Alignment.TopCenter,
@@ -285,7 +370,7 @@ private fun HandCard(card: Card, selected: Boolean, onClick: () -> Unit, modifie
 
 @Composable
 private fun MiniCard(card: Card, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(4.dp)
     Box(
         modifier = modifier
             .clip(shape)
@@ -295,7 +380,8 @@ private fun MiniCard(card: Card, modifier: Modifier = Modifier) {
     ) {
         Text(
             Doudizhu.cardText(card),
-            fontSize = 12.sp,
+            fontSize = 10.sp,
+            maxLines = 1,
             color = if (Doudizhu.isRed(card)) Color(0xFFC62828) else Color(0xFF2E2A25),
         )
     }

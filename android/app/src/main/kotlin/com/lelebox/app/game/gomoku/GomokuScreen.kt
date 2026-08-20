@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,6 +102,7 @@ private fun GomokuBoard(
     val context = LocalContext.current
     val game = remember { GomokuGame() }
     var round by remember { mutableStateOf(0) }
+    var tick by remember { mutableIntStateOf(0) }
     var thinking by remember { mutableStateOf(false) }
     // 走子历史（用于撤销）
     val history = remember { mutableListOf<Pair<Int, Int>>() }
@@ -109,6 +112,7 @@ private fun GomokuBoard(
         history.clear()
         thinking = false
         round++
+        tick++
     }
 
     // 玩家落子后，电脑延时思考
@@ -117,7 +121,10 @@ private fun GomokuBoard(
             thinking = true
             delay(500)
             game.aiMove(level)?.let { (x, y) ->
-                if (game.place(x, y)) history.add(x to y)
+                if (game.place(x, y)) {
+                    history.add(x to y)
+                    tick++
+                }
             }
             thinking = false
         }
@@ -128,6 +135,7 @@ private fun GomokuBoard(
         if (game.place(x, y)) {
             history.add(x to y)
             Sfx.click(context)
+            tick++ // 触发重绘，显示棋子
         }
     }
 
@@ -148,6 +156,7 @@ private fun GomokuBoard(
         thinking = false
         Sfx.click(context)
         round++
+        tick++
     }
 
     val status = when {
@@ -181,49 +190,51 @@ private fun GomokuBoard(
         }
         Spacer(Modifier.height(10.dp))
 
-        // 棋盘
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .background(Color(0xFFEDE3D0))
-                .semantics { contentDescription = "五子棋棋盘，${game.size}乘${game.size}" }
-                .pointerInput(round) {
-                    detectTapGestures { offset ->
-                        val cell = size.width / game.size
-                        val x = (offset.x / cell).toInt().coerceIn(0, game.size - 1)
-                        val y = (offset.y / cell).toInt().coerceIn(0, game.size - 1)
-                        onBoardTap(x, y)
+        // 棋盘（key(tick) 强制在每次落子后重绘棋子）
+        key(tick) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .background(Color(0xFFEDE3D0))
+                    .semantics { contentDescription = "五子棋棋盘，${game.size}乘${game.size}" }
+                    .pointerInput(round, tick) {
+                        detectTapGestures { offset ->
+                            val cell = size.width / game.size
+                            val x = (offset.x / cell).toInt().coerceIn(0, game.size - 1)
+                            val y = (offset.y / cell).toInt().coerceIn(0, game.size - 1)
+                            onBoardTap(x, y)
+                        }
+                    },
+            ) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val cell = size.width / game.size
+                    val pad = cell / 2f
+                    // 网格线
+                    val lineColor = Color(0xFFA89070)
+                    for (i in 0 until game.size) {
+                        val p = pad + i * cell
+                        drawLine(lineColor, Offset(p, pad), Offset(p, size.height - pad), strokeWidth = 1.5f)
+                        drawLine(lineColor, Offset(pad, p), Offset(size.width - pad, p), strokeWidth = 1.5f)
                     }
-                },
-        ) {
-            Canvas(Modifier.fillMaxSize()) {
-                val cell = size.width / game.size
-                val pad = cell / 2f
-                // 网格线
-                val lineColor = Color(0xFFA89070)
-                for (i in 0 until game.size) {
-                    val p = pad + i * cell
-                    drawLine(lineColor, Offset(p, pad), Offset(p, size.height - pad), strokeWidth = 1.5f)
-                    drawLine(lineColor, Offset(pad, p), Offset(size.width - pad, p), strokeWidth = 1.5f)
-                }
-                // 棋子
-                for (y in 0 until game.size) {
-                    for (x in 0 until game.size) {
-                        val s = game.get(x, y)
-                        if (s != NONE) {
-                            val cx = pad + x * cell
-                            val cy = pad + y * cell
-                            val r = cell * 0.42f
-                            val c = if (s == BLACK) Color(0xFF2E2A25) else Color.White
-                            drawCircle(color = c, radius = r, center = Offset(cx, cy))
-                            if (s == WHITE) {
-                                drawCircle(
-                                    color = Color(0xFFB9A98D),
-                                    radius = r,
-                                    center = Offset(cx, cy),
-                                    style = Stroke(width = 2f),
-                                )
+                    // 棋子
+                    for (y in 0 until game.size) {
+                        for (x in 0 until game.size) {
+                            val s = game.get(x, y)
+                            if (s != NONE) {
+                                val cx = pad + x * cell
+                                val cy = pad + y * cell
+                                val r = cell * 0.42f
+                                val c = if (s == BLACK) Color(0xFF2E2A25) else Color.White
+                                drawCircle(color = c, radius = r, center = Offset(cx, cy))
+                                if (s == WHITE) {
+                                    drawCircle(
+                                        color = Color(0xFFB9A98D),
+                                        radius = r,
+                                        center = Offset(cx, cy),
+                                        style = Stroke(width = 2f),
+                                    )
+                                }
                             }
                         }
                     }

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -141,46 +142,45 @@ private fun SpotBoard(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text("已找到 ${game.found.size} / ${game.diffs.size} 处", style = MaterialTheme.typography.titleMedium)
-                if (game.misses > 0) {
-                    Text("点错 ${game.misses} 次", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // 状态 + 上下两张图（key(tick) 强制找到差异后重绘绿圈与计数）
+        key(tick) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text("已找到 ${game.found.size} / ${game.diffs.size} 处", style = MaterialTheme.typography.titleMedium)
+                        if (game.misses > 0) {
+                            Text("点错 ${game.misses} 次", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    ElderButton(text = "提示", onClick = ::onHint, minHeight = 52.dp)
                 }
-            }
-            ElderButton(text = "提示", onClick = ::onHint, minHeight = 52.dp)
-        }
-        Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(10.dp))
 
-        // 两幅图并排
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            ScenePanel(
-                variant = false,
-                game = game,
-                hintIdx = hintIdx,
-                onTap = ::onTap,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            )
-            ScenePanel(
-                variant = true,
-                game = game,
-                hintIdx = hintIdx,
-                onTap = ::onTap,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            )
+                // 上下结构：上面原图，下面变体图
+                ScenePanel(
+                    variant = false,
+                    game = game,
+                    hintIdx = hintIdx,
+                    onTap = ::onTap,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+                Spacer(Modifier.height(10.dp))
+                ScenePanel(
+                    variant = true,
+                    game = game,
+                    hintIdx = hintIdx,
+                    onTap = ::onTap,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -235,7 +235,7 @@ private fun ScenePanel(
             .background(Color.White)
             .border(1.dp, OutlineWarm, shape)
             .semantics {
-                contentDescription = if (variant) "右边图片" else "左边图片，${game.sceneName}场景，找不同"
+                contentDescription = if (variant) "下面的图片" else "上面的图片，${game.sceneName}场景，找不同"
             }
             .pointerInput(game.found.size, hintIdx) {
                 detectTapGestures { offset ->

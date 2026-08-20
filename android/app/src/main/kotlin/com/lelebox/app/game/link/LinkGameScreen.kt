@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -176,32 +177,34 @@ private fun LinkBoard(
         }
         Spacer(Modifier.height(10.dp))
 
-        // 棋盘（弹性占满）
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            for (y in 0 until game.rows) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    for (x in 0 until game.cols) {
-                        val idx = y * game.cols + x
-                        LinkTile(
-                            emoji = if (game.symbols[idx] > 0) TILE_EMOJIS[(game.symbols[idx] - 1) % TILE_EMOJIS.size] else "",
-                            removed = game.symbols[idx] == 0,
-                            selected = selected == idx,
-                            x = x, y = y,
-                            onClick = { onTileTap(idx) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                        )
+        // 棋盘（key(round) 强制在消除/洗牌/重开后重绘）
+        key(round) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                for (y in 0 until game.rows) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        for (x in 0 until game.cols) {
+                            val idx = y * game.cols + x
+                            LinkTile(
+                                emoji = if (game.symbols[idx] > 0) TILE_EMOJIS[(game.symbols[idx] - 1) % TILE_EMOJIS.size] else "",
+                                removed = game.symbols[idx] == 0,
+                                selected = selected == idx,
+                                x = x, y = y,
+                                onClick = { onTileTap(idx) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                            )
+                        }
                     }
                 }
             }

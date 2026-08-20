@@ -3,6 +3,7 @@ package com.lelebox.app.game
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -68,6 +69,12 @@ class GameShellActivity : ComponentActivity() {
             return
         }
         val game = Games.byId(gameId)
+        // 斗地主横屏对局（P1），其余保持系统方向
+        requestedOrientation = if (game.id == "doudizhu") {
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
         val fontScale = parseFontScale(settingsPrefs.getString("font_scale", null))
 
         setContent {

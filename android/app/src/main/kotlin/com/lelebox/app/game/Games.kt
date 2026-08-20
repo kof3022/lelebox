@@ -3,6 +3,7 @@ package com.lelebox.app.game
 import androidx.compose.ui.graphics.Color
 import com.lelebox.app.R
 import com.lelebox.app.ui.Game2048
+import com.lelebox.app.ui.GameGomoku
 import com.lelebox.app.ui.GameMemory
 import com.lelebox.app.ui.GameSudoku
 
@@ -25,8 +26,18 @@ data class GameEntry(
 )
 
 object Games {
-    /** 第一批（M1，2025-08 现状）：2048/数独/记忆翻牌原生（纸牌接龙已于 v0.2.2 移除） */
+    /** 第一批（M1）：2048/数独/记忆翻牌原生；M2 起新增游戏（docs/11） */
     val firstBatch = listOf(
+        GameEntry(
+            id = "gomoku",
+            title = "五子棋",
+            subtitle = "连成五个就赢",
+            help = "你先下黑棋，电脑下白棋。横、竖、斜哪边先连成五个就赢。点一下棋盘交叉点落子。",
+            kind = GameKind.NATIVE,
+            emoji = "⚫",
+            accent = GameGomoku,
+            iconRes = R.drawable.ic_game_gomoku,
+        ),
         GameEntry(
             id = "2048",
             title = "2048",

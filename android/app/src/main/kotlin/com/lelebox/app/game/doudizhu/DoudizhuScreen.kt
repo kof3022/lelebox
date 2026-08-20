@@ -58,6 +58,7 @@ import com.lelebox.app.R
 import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
+import com.lelebox.app.ui.ElderTopBar
 import kotlinx.coroutines.delay
 
 /** 斗地主入口：选难度（竖屏）→ 对局（横屏沉浸全屏） */
@@ -133,42 +134,46 @@ private fun LevelSelect(
 ) {
     Column(
         modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 顶部一行：返回 / 帮助（参考找不同：壳顶栏位置）
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            ElderButton(text = "←", onClick = onBack, minHeight = 48.dp, modifier = Modifier.width(80.dp))
-            ElderButton(text = "帮助", onClick = onHelp, minHeight = 48.dp)
-        }
-        Spacer(Modifier.height(16.dp))
-        // 图标 + 标题 + 说明（与找不同难度选择同一风格）
-        Image(
-            painter = painterResource(R.drawable.ic_game_doudizhu),
-            contentDescription = "斗地主",
-            modifier = Modifier.size(96.dp),
-        )
-        Spacer(Modifier.height(18.dp))
-        Text("斗地主", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "叫地主后先出完牌就赢。\n选个电脑水平吧。",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 26.sp,
-        )
-        Spacer(Modifier.height(32.dp))
-        // 难度按钮竖排大按钮（与找不同一致）
-        DoudizhuLevel.entries.forEach { lv ->
-            ElderButton(
-                text = "${lv.label}（${lv.hint}）",
-                onClick = { onStart(lv) },
-                modifier = Modifier.fillMaxWidth(),
+        // 头部与找不同等游戏统一：ElderTopBar（标题居中 + ← 返回 + 帮助）
+        ElderTopBar(title = "斗地主", onBack = onBack, onRight = onHelp, rightText = "帮助")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.weight(1f))
+            // 图标 + 标题 + 说明（与找不同难度选择同一风格）
+            Image(
+                painter = painterResource(R.drawable.ic_game_doudizhu),
+                contentDescription = "斗地主",
+                modifier = Modifier.size(96.dp),
             )
+            Spacer(Modifier.height(18.dp))
+            Text("斗地主", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "叫地主后先出完牌就赢。\n选个电脑水平吧。",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                lineHeight = 26.sp,
+            )
+            Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(16.dp))
+            // 难度按钮竖排大按钮（与找不同一致）
+            DoudizhuLevel.entries.forEach { lv ->
+                ElderButton(
+                    text = "${lv.label}（${lv.hint}）",
+                    onClick = { onStart(lv) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 }

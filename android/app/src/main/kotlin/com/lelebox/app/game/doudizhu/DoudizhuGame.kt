@@ -95,6 +95,8 @@ class DoudizhuGame {
     var lastCombo: Combo? = null
     var lastPlayer = -1
     var passCount = 0
+    /** 三家各自出的上一手（用于出牌区展示） */
+    val lastPlays = arrayOfNulls<Combo>(3)
     var winner = -1
     var over = false
 
@@ -114,6 +116,7 @@ class DoudizhuGame {
         lastCombo = null
         lastPlayer = -1
         passCount = 0
+        lastPlays.fill(null)
         winner = -1
         over = false
     }
@@ -170,6 +173,7 @@ class DoudizhuGame {
         hands[0].removeAll(cards)
         lastCombo = combo
         lastPlayer = 0
+        lastPlays[0] = combo
         passCount = 0
         if (hands[0].isEmpty()) { winner = 0; over = true; return PlayResult.GAME_OVER }
         current = next(0)
@@ -199,6 +203,7 @@ class DoudizhuGame {
         hands[p].removeAll(beat.cards)
         lastCombo = beat
         lastPlayer = p
+        lastPlays[p] = beat
         passCount = 0
         if (hands[p].isEmpty()) { winner = p; over = true; return PlayResult.GAME_OVER }
         current = next(p)
@@ -209,6 +214,7 @@ class DoudizhuGame {
         passCount++
         if (passCount >= 2) {
             lastCombo = null
+            lastPlays.fill(null) // 新一轮自由出牌，清空出牌区
             passCount = 0
         }
         current = next(p)

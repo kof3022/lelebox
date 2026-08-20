@@ -3,7 +3,6 @@ package com.lelebox.app.game
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -36,9 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.lelebox.app.game.memory.MemoryGameScreen
 import com.lelebox.app.game.g2048.Game2048Screen
 import com.lelebox.app.game.doudizhu.DoudizhuScreen
@@ -72,13 +68,7 @@ class GameShellActivity : ComponentActivity() {
             return
         }
         val game = Games.byId(gameId)
-        // 斗地主：横屏 + 沉浸全屏（隐藏系统栏，玩牌界面最大化）
-        if (game.id == "doudizhu") {
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            enterImmersive()
-        } else {
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        }
+        // 方向由各游戏内管理：斗地主难度页竖屏、对局横屏沉浸；其余默认竖屏
         val fontScale = parseFontScale(settingsPrefs.getString("font_scale", null))
 
         setContent {
@@ -194,22 +184,6 @@ class GameShellActivity : ComponentActivity() {
                     },
                 )
             }
-        }
-    }
-
-    /** 沉浸全屏：隐藏状态栏/导航栏，滑动可临时唤出 */
-    private fun enterImmersive() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        val controller = WindowCompat.getInsetsController(window, window.decorView)
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        controller.hide(WindowInsetsCompat.Type.systemBars())
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && intent.getStringExtra(EXTRA_GAME_ID) == "doudizhu") {
-            WindowCompat.getInsetsController(window, window.decorView)
-                .hide(WindowInsetsCompat.Type.systemBars())
         }
     }
 

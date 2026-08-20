@@ -1,5 +1,9 @@
 package com.lelebox.app.game.doudizhu
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -38,34 +43,89 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
 import kotlinx.coroutines.delay
 
-/** 斗地主入口：选难度 → 横屏对局（沉浸全屏，界面内自带紧凑返回/帮助） */
+/** 斗地主入口：选难度（竖屏）→ 对局（横屏沉浸全屏） */
 @Composable
 fun DoudizhuScreen(
     onBack: () -> Unit = {},
     onHelp: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
     var level by remember { mutableStateOf<DoudizhuLevel?>(null) }
-    when (val lv = level) {
-        null -> LevelSelect(onStart = { level = it }, onBack = onBack, modifier = modifier)
-        else -> GameTable(lv, onBack = onBack, onHelp = onHelp, onBackToLevels = { level = null }, modifier = modifier)
+
+    // 方向与沉浸：难度页竖屏（显示系统栏）；对局横屏沉浸（隐藏系统栏）
+    LaunchedEffect(level != null) {
+        val act = activity ?: return@LaunchedEffect
+        if (level == null) {
+            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            WindowCompat.setDecorFitsSystemWindows(act.window, true)
+            WindowCompat.getInsetsController(act.window, act.window.decorView)
+                .show(WindowInsetsCompat.Type.systemBars())
+        } else {
+            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            WindowCompat.setDecorFitsSystemWindows(act.window, false)
+            val c = WindowCompat.getInsetsController(act.window, act.window.decorView)
+            c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            c.hide(WindowInsetsCompat.Type.systemBars())
+        }
     }
+    // 焦点回归（对话框关闭等）后重新隐藏系统栏
+    val windowInfo = LocalWindowInfo.current
+    LaunchedEffect(windowInfo.isWindowFocused, level != null) {
+        val act = activity
+        if (level != null && windowInfo.isWindowFocused && act != null) {
+            WindowCompat.getInsetsController(act.window, act.window.decorView)
+                .hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+    // 离开斗地主时恢复默认方向与系统栏
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.let { act ->
+                WindowCompat.setDecorFitsSystemWindows(act.window, true)
+                WindowCompat.getInsetsController(act.window, act.window.decorView)
+                    .show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
+    when (val lv = level) {
+        null -> LevelSelect(onStart = { level = it }, onBack = onBack, onHelp = onHelp, modifier = modifier)
+        else -> GameTable(lv, onBack = onBack, onBackToLevels = { level = null }, modifier = modifier)
+    }
+}
+
+/** 从 Context 向上找到 Activity（LocalContext 可能是 ContextThemeWrapper） */
+private fun Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
 
 @Composable
 private fun LevelSelect(
     onStart: (DoudizhuLevel) -> Unit,
     onBack: () -> Unit,
+    onHelp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -75,8 +135,9 @@ private fun LevelSelect(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             ElderButton(text = "←", onClick = onBack, minHeight = 44.dp, modifier = Modifier.width(72.dp))
+            ElderButton(text = "帮助", onClick = onHelp, minHeight = 44.dp)
         }
         Spacer(Modifier.height(8.dp))
         Text("🃏", fontSize = 44.sp)
@@ -107,7 +168,6 @@ private fun LevelSelect(
 private fun GameTable(
     level: DoudizhuLevel,
     onBack: () -> Unit,
-    onHelp: () -> Unit,
     onBackToLevels: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -125,8 +185,8 @@ private fun GameTable(
 
     fun refresh() = tick++
 
-    // AI 回合 + 托管驱动
-    LaunchedEffect(tick) {
+    // AI 回合 + 托管驱动：key 含 autoPlay，开启托管立即接管出牌（无需先手动出一张）
+    LaunchedEffect(tick, autoPlay) {
         while (game.phase == 1 && !game.over && (game.current != 0 || autoPlay)) {
             delay(700)
             if (game.current == 0 && autoPlay) {
@@ -172,42 +232,11 @@ private fun GameTable(
         refresh()
     }
 
-    fun onHint() {
-        val combos = game.findCombos(game.hands[0])
-        val prev = game.lastCombo
-        val target = if (prev == null) {
-            combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
-                .minByOrNull { it.mainRank * 10 + it.cards.size }
-                ?: combos.minByOrNull { it.mainRank }
-        } else {
-            combos.filter { canBeat(prev, it) }.minByOrNull { it.mainRank }
-        }
-        if (target != null) {
-            selected = target.cards.toSet()
-            Sfx.click(context)
-        } else {
-            Sfx.fail(context)
-        }
-        refresh()
-    }
-
     fun onNewDeal() {
         game.newDeal()
         selected = emptySet()
         Sfx.click(context)
         refresh()
-    }
-
-    val status = when {
-        game.phase == 0 -> "谁来当地主？"
-        game.over -> if (game.winner == 0) "你赢啦！" else if (game.isLandlord(game.winner)) "地主赢了" else "农民赢了"
-        game.current == 0 -> if (autoPlay) "托管中…" else "该你出牌"
-        else -> "电脑思考中…"
-    }
-    val role = when {
-        game.landlord == -1 -> ""
-        game.isLandlord(0) -> "你是地主"
-        else -> "你是农民"
     }
 
     // 全屏牌桌：深绿绒布渐变铺满整屏 + 金色包边（即梦牌桌背景图后补替换此背景）
@@ -226,44 +255,6 @@ private fun GameTable(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 状态行（半透明深色条保证可读，隐藏一切无关内容）
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0x99000000))
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ElderButton(
-                text = "←",
-                onClick = onBack,
-                minHeight = 44.dp,
-                modifier = Modifier.width(64.dp),
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
-            Text(
-                status,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (game.current == 0 && !game.over && game.phase == 1) Color(0xFF8BE08B) else Color.White,
-                modifier = Modifier.weight(1f),
-            )
-            Text(role, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFD8E4DC))
-            ElderButton(
-                text = "帮助",
-                onClick = onHelp,
-                minHeight = 44.dp,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = Color.White,
-                ),
-            )
-        }
-
         // 主区：左对手 | 中央桌面 | 右对手
         key(tick) {
             Row(
@@ -356,13 +347,15 @@ private fun GameTable(
             Spacer(Modifier.height(6.dp))
         }
 
-        // 出牌按钮（仅出牌阶段）
+        // 出牌按钮（仅出牌阶段）：退出/重发小按钮与中间三按钮分开
         if (game.phase == 1) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                ElderButton(text = "提示", onClick = ::onHint, modifier = Modifier.weight(1f), minHeight = 54.dp)
+                ElderButton(text = "退出", onClick = onBack, modifier = Modifier.width(100.dp), minHeight = 48.dp)
+                Spacer(Modifier.width(10.dp))
                 ElderButton(text = "出牌", onClick = ::onPlay, modifier = Modifier.weight(1f), minHeight = 54.dp)
                 ElderButton(text = "不出", onClick = ::onPass, modifier = Modifier.weight(1f), minHeight = 54.dp)
                 ElderButton(
@@ -371,7 +364,8 @@ private fun GameTable(
                     modifier = Modifier.weight(1f),
                     minHeight = 54.dp,
                 )
-                ElderButton(text = "重发", onClick = ::onNewDeal, modifier = Modifier.weight(1f), minHeight = 54.dp)
+                Spacer(Modifier.width(10.dp))
+                ElderButton(text = "重发", onClick = ::onNewDeal, modifier = Modifier.width(100.dp), minHeight = 48.dp)
             }
         }
     }

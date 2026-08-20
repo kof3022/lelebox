@@ -6,6 +6,7 @@ import com.lelebox.app.ui.Game2048
 import com.lelebox.app.ui.GameGomoku
 import com.lelebox.app.ui.GameLink
 import com.lelebox.app.ui.GameMemory
+import com.lelebox.app.ui.GameSpot
 import com.lelebox.app.ui.GameSudoku
 
 /** 游戏接入层：L1 原生（Compose） / L2 离线 H5（WebView，预留） */
@@ -29,6 +30,16 @@ data class GameEntry(
 object Games {
     /** 第一批（M1）：2048/数独/记忆翻牌原生；M2 起新增游戏（docs/11） */
     val firstBatch = listOf(
+        GameEntry(
+            id = "spot",
+            title = "找不同",
+            subtitle = "找一找哪里不一样",
+            help = "左边和右边两幅图，找一找哪里不一样，点一下就算找到。全部找齐就赢啦！",
+            kind = GameKind.NATIVE,
+            emoji = "🔍",
+            accent = GameSpot,
+            iconRes = R.drawable.ic_game_spot,
+        ),
         GameEntry(
             id = "link",
             title = "连连看",

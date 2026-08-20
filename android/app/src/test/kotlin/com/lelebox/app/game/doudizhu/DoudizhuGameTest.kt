@@ -160,7 +160,7 @@ class DoudizhuGameTest {
     }
 
     @Test
-    fun `pass twice resets to free lead`() {
+    fun `pass twice keeps display then clears on free lead`() {
         val g = DoudizhuGame()
         g.newDeal()
         g.playerBid(true)
@@ -177,9 +177,16 @@ class DoudizhuGameTest {
         g.aiAct() // AI2 过
         assertNull(g.lastCombo)
         assertEquals(0, g.current)
-        // 两家都过后新一轮开始，标记复位
+        // 两家都过后："过"与牌面保留展示（不一轮空白），直到自由出牌才清空
+        assertTrue(g.passedThisRound[1])
+        assertTrue(g.passedThisRound[2])
+        // 玩家自由出牌（新一轮第一手）→ 清空展示
+        val single = g.hands[0].minBy { it.rank }
+        g.playerPlay(listOf(single))
+        assertTrue(g.playedThisRound[0])
         assertFalse(g.passedThisRound[1])
         assertFalse(g.passedThisRound[2])
+        assertNotNull(g.lastPlays[0])
     }
 
     @Test

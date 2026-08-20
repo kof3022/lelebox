@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,21 +47,41 @@ import com.lelebox.app.ui.ElderGreen
 import com.lelebox.app.ui.OutlineWarm
 import kotlinx.coroutines.delay
 
-/** 找不同入口 */
+/** 找不同入口：难度（简单/中等/困难）→ 选关（每难度 3 关）→ 对局 */
 @Composable
 fun SpotGameScreen(
     modifier: Modifier = Modifier,
 ) {
-    var level by remember { mutableStateOf<SpotLevel?>(null) }
-    when (val lv = level) {
-        null -> SpotLevelSelect(onStart = { level = it }, modifier = modifier)
-        else -> SpotBoard(lv, onBackToLevels = { level = null }, modifier = modifier)
+    var difficulty by remember { mutableStateOf<SpotLevel?>(null) }
+    var stage by remember { mutableIntStateOf(-1) } // -1 = 选关
+
+    val lv = difficulty
+    when {
+        lv == null -> SpotDifficultySelect(
+            onPick = { difficulty = it; stage = -1 },
+            modifier = modifier,
+        )
+        stage == -1 -> SpotStageSelect(
+            level = lv,
+            onPick = { stage = it },
+            onBack = { difficulty = null },
+            modifier = modifier,
+        )
+        else -> SpotBoard(
+            level = lv,
+            scene = lv.scenes[stage],
+            onNext = {
+                if (stage + 1 < lv.scenes.size) stage++ else { stage = -1; difficulty = null }
+            },
+            onBackToLevels = { difficulty = null; stage = -1 },
+            modifier = modifier,
+        )
     }
 }
 
 @Composable
-private fun SpotLevelSelect(
-    onStart: (SpotLevel) -> Unit,
+private fun SpotDifficultySelect(
+    onPick: (SpotLevel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -81,27 +100,70 @@ private fun SpotLevelSelect(
         Text("找不同", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(10.dp))
         Text(
-            "左边和右边两幅图，找一找哪里不一样，点一下就算找到。全部找齐就赢啦！",
+            "上面和下面两幅图，找一找哪里不一样，点一下就算找到。共 9 关。",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(32.dp))
         SpotLevel.entries.forEach { lv ->
-            ElderButton(text = lv.label, onClick = { onStart(lv) }, modifier = Modifier.fillMaxWidth())
+            ElderButton(
+                text = "${lv.label}（每关 ${lv.diffCount} 处）",
+                onClick = { onPick(lv) },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Spacer(Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
+private fun SpotStageSelect(
+    level: SpotLevel,
+    onPick: (Int) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("${level.label} · 选一关", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(24.dp))
+        level.scenes.forEachIndexed { i, scene ->
+            ElderButton(
+                text = "第${i + 1}关 · ${scene.name}",
+                onClick = { onPick(i) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(14.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        ElderButton(
+            text = "返回选难度",
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        )
+    }
+}
+
+@Composable
 private fun SpotBoard(
     level: SpotLevel,
+    scene: SpotSceneDef,
+    onNext: () -> Unit,
     onBackToLevels: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val game = remember(level) { SpotGame(level) }
+    val game = remember(scene) { SpotGame(scene) }
     var tick by remember { mutableIntStateOf(0) }
     var hintIdx by remember { mutableIntStateOf(-1) }
 
@@ -113,11 +175,7 @@ private fun SpotBoard(
 
     fun onTap(nx: Float, ny: Float) {
         if (game.over) return
-        if (game.checkTap(nx, ny)) {
-            Sfx.success(context)
-        } else {
-            Sfx.fail(context)
-        }
+        if (game.checkTap(nx, ny)) Sfx.success(context) else Sfx.fail(context)
         tick++
     }
 
@@ -142,7 +200,6 @@ private fun SpotBoard(
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 状态 + 上下两张图（key(tick) 强制找到差异后重绘绿圈与计数）
         key(tick) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
@@ -151,7 +208,7 @@ private fun SpotBoard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column {
-                        Text("已找到 ${game.found.size} / ${game.diffs.size} 处", style = MaterialTheme.typography.titleMedium)
+                        Text("${scene.name} · 已找到 ${game.found.size} / ${game.diffs.size}", style = MaterialTheme.typography.titleMedium)
                         if (game.misses > 0) {
                             Text("点错 ${game.misses} 次", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -163,6 +220,7 @@ private fun SpotBoard(
                 // 上下结构：上面原图，下面变体图
                 ScenePanel(
                     variant = false,
+                    scene = scene,
                     game = game,
                     hintIdx = hintIdx,
                     onTap = ::onTap,
@@ -173,6 +231,7 @@ private fun SpotBoard(
                 Spacer(Modifier.height(10.dp))
                 ScenePanel(
                     variant = true,
+                    scene = scene,
                     game = game,
                     hintIdx = hintIdx,
                     onTap = ::onTap,
@@ -189,7 +248,7 @@ private fun SpotBoard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.weight(1f))
-            ElderButton(text = "再玩一局", onClick = ::newRound, modifier = Modifier.weight(1f))
+            ElderButton(text = "重玩本关", onClick = ::newRound, modifier = Modifier.weight(1f))
         }
     }
 
@@ -213,7 +272,9 @@ private fun SpotBoard(
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(32.dp))
-            ElderButton(text = "再玩一局", onClick = ::newRound, modifier = Modifier.fillMaxWidth())
+            ElderButton(text = "下一关", onClick = onNext, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            ElderButton(text = "重玩本关", onClick = ::newRound, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
         }
@@ -223,6 +284,7 @@ private fun SpotBoard(
 @Composable
 private fun ScenePanel(
     variant: Boolean,
+    scene: SpotSceneDef,
     game: SpotGame,
     hintIdx: Int,
     onTap: (Float, Float) -> Unit,
@@ -235,7 +297,7 @@ private fun ScenePanel(
             .background(Color.White)
             .border(1.dp, OutlineWarm, shape)
             .semantics {
-                contentDescription = if (variant) "下面的图片" else "上面的图片，${game.sceneName}场景，找不同"
+                contentDescription = if (variant) "下面的图片" else "上面的图片，${scene.name}场景，找不同"
             }
             .pointerInput(game.found.size, hintIdx) {
                 detectTapGestures { offset ->
@@ -246,12 +308,7 @@ private fun ScenePanel(
             },
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            if (game.level == SpotLevel.EASY) {
-                drawGarden(this, variant)
-            } else {
-                drawPark(this, variant)
-            }
-            // 已找到：绿圈（两图同步）
+            scene.draw(this, variant)
             game.found.forEach { i ->
                 val d = game.diffs[i].rect
                 val s = SceneCtx(this)
@@ -262,7 +319,6 @@ private fun ScenePanel(
                     style = Stroke(width = s.r(8f)),
                 )
             }
-            // 提示：琥珀圈
             if (hintIdx >= 0 && hintIdx < game.diffs.size) {
                 val d = game.diffs[hintIdx].rect
                 val s = SceneCtx(this)

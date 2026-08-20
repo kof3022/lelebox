@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.R
+import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.SuccessSoft
 import kotlinx.coroutines.delay
@@ -104,7 +107,9 @@ private fun MemoryBoard(
     var locked by remember { mutableStateOf(false) }
     var best by remember { mutableStateOf(prefs.getInt("native_memory_best_${level.name}", Int.MAX_VALUE)) }
     var isNewRecord by remember { mutableStateOf(false) }
+    var oldBest by remember { mutableIntStateOf(Int.MAX_VALUE) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val won = matched.size == board.size
 
@@ -121,12 +126,14 @@ private fun MemoryBoard(
         if (locked || won || index in flipped || index in matched) return
         val newFlipped = flipped + index
         moves++
+        Sfx.click(context)
         if (newFlipped.size == 2) {
             val a = newFlipped[0]
             val b = newFlipped[1]
             if (board[a] == board[b]) {
                 matched = matched + a + b
                 flipped = emptyList()
+                Sfx.success(context)
             } else {
                 locked = true
                 flipped = newFlipped
@@ -143,10 +150,14 @@ private fun MemoryBoard(
 
     // 获胜：更新最优步数（无计时、无惩罚，只记最优）
     LaunchedEffect(won) {
-        if (won && moves < best) {
-            prefs.edit().putInt("native_memory_best_${level.name}", moves).apply()
-            best = moves
-            isNewRecord = true
+        if (won) {
+            Sfx.success(context)
+            if (moves < best) {
+                oldBest = best
+                prefs.edit().putInt("native_memory_best_${level.name}", moves).apply()
+                best = moves
+                isNewRecord = true
+            }
         }
     }
 
@@ -219,13 +230,13 @@ private fun MemoryBoard(
         ) {
             Text("🎉", fontSize = 64.sp)
             Spacer(Modifier.height(12.dp))
-            Text("你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
-            Spacer(Modifier.height(8.dp))
+            Text("你真棒！全部配对成功！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+            Spacer(Modifier.height(10.dp))
             Text(
-                if (isNewRecord) "新纪录！只用 $moves 步"
-                else "用了 $moves 步完成",
+                if (isNewRecord) "新纪录！只用 $moves 步（原来最佳 ${if (oldBest == Int.MAX_VALUE) "—" else "$oldBest 步"}）"
+                else "用了 $moves 步完成，最佳纪录 $best 步",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White,
+                color = Color(0xFFFFE0B2),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(32.dp))

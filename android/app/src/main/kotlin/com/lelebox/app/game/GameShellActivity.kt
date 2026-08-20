@@ -3,7 +3,6 @@ package com.lelebox.app.game
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.media.AudioManager
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -32,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +68,9 @@ class GameShellActivity : ComponentActivity() {
 
         setContent {
             var showHelp by remember { mutableStateOf(false) }
-            val audio = LocalContext.current.getSystemService(AudioManager::class.java)
+            var soundOn by remember {
+                mutableStateOf(settingsPrefs.getBoolean("sound_enabled", true))
+            }
 
             // 首次进入自动显示帮助（大字图文）
             LaunchedEffect(Unit) {
@@ -124,45 +124,33 @@ class GameShellActivity : ComponentActivity() {
                             Text(game.help, style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(18.dp))
                             Text(
-                                "声音大小",
+                                "音效",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(8.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ElderButton(
+                                text = if (soundOn) "音效：开" else "音效：关",
+                                onClick = {
+                                    soundOn = !soundOn
+                                    settingsPrefs.edit().putBoolean("sound_enabled", soundOn).apply()
+                                },
                                 modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                ElderButton(
-                                    text = "小声一点",
-                                    onClick = {
-                                        audio?.adjustStreamVolume(
-                                            AudioManager.STREAM_MUSIC,
-                                            AudioManager.ADJUST_LOWER,
-                                            0,
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
+                                colors = if (soundOn) {
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    )
+                                } else {
+                                    ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                         contentColor = MaterialTheme.colorScheme.onSurface,
-                                    ),
-                                )
-                                ElderButton(
-                                    text = "大声一点",
-                                    onClick = {
-                                        audio?.adjustStreamVolume(
-                                            AudioManager.STREAM_MUSIC,
-                                            AudioManager.ADJUST_RAISE,
-                                            0,
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
+                                    )
+                                },
+                            )
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "点右边变大，点左边变小",
+                                "游戏提示音开关；音量请用手机侧边音量键调节",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

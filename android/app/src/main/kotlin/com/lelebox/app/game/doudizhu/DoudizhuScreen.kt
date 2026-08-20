@@ -132,35 +132,41 @@ private fun LevelSelect(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // 顶部一行：返回 / 帮助
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            ElderButton(text = "←", onClick = onBack, minHeight = 44.dp, modifier = Modifier.width(72.dp))
-            ElderButton(text = "帮助", onClick = onHelp, minHeight = 44.dp)
+            ElderButton(text = "←", onClick = onBack, minHeight = 48.dp, modifier = Modifier.width(80.dp))
+            ElderButton(text = "帮助", onClick = onHelp, minHeight = 48.dp)
         }
-        Spacer(Modifier.height(8.dp))
-        Text("🃏", fontSize = 44.sp)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.weight(1f))
+        Text("🃏", fontSize = 56.sp)
+        Spacer(Modifier.height(10.dp))
         Text("斗地主", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
-            "叫地主后先出完牌就赢。选个电脑水平吧。",
+            "叫地主后先出完牌就赢。\n选个电脑水平吧。",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            lineHeight = 26.sp,
         )
-        Spacer(Modifier.height(20.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(Modifier.weight(1.2f))
+        // 底部：三个难度按钮
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             DoudizhuLevel.entries.forEach { lv ->
                 ElderButton(
                     text = lv.label,
                     onClick = { onStart(lv) },
                     modifier = Modifier.weight(1f),
-                    minHeight = 56.dp,
+                    minHeight = 60.dp,
                 )
             }
         }
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -315,14 +321,14 @@ private fun GameTable(
             Spacer(Modifier.height(6.dp))
         }
 
-        // 手牌：发牌后（叫地主阶段）即可看到自己的牌；出牌阶段同样展示、可点
+        // 手牌：发牌后（叫地主阶段）即可看到自己的牌；出牌阶段同样展示、可点；整体横向居中
         if (game.phase == 0 || game.phase == 1) {
             key(tick) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .height(78.dp),
+                        .height(78.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy((-7).dp),
                 ) {
                     game.hands[0].forEachIndexed { i, card ->
                         val angle = ((i - (game.hands[0].size - 1) / 2f) * 3f).coerceIn(-18f, 18f)
@@ -339,7 +345,6 @@ private fun GameTable(
                                     refresh()
                                 }
                             },
-                            modifier = Modifier.offset(x = (-i * 7).dp),
                         )
                     }
                 }

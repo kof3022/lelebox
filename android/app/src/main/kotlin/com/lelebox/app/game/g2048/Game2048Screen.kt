@@ -315,20 +315,23 @@ private fun ArcadeButton(dir: Dir, onClick: () -> Unit, modifier: Modifier = Mod
             .clickable(interactionSource = interaction, indication = ripple()) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = DirArrows.of(dir),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(26.dp),
-            )
-            Text(
-                label,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+        // 文字居中，箭头作为上方小标识（方向依然一目了然）
+        Icon(
+            imageVector = DirArrows.of(dir),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 6.dp)
+                .size(20.dp),
+        )
+        Text(
+            label,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.align(Alignment.Center),
+        )
     }
 }
 

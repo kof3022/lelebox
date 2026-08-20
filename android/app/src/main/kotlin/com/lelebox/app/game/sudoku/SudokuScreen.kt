@@ -435,7 +435,12 @@ private fun SudokuCell(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (d in candidates) {
-                                    Text("$d", fontSize = 11.sp, color = Color(0xFF6E675E))
+                                    Text(
+                                        "$d",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = GameSudoku,
+                                    )
                                 }
                             }
                         }

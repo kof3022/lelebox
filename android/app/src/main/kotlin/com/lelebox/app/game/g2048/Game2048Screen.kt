@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -48,6 +49,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.ui.ElderButton
+import com.lelebox.app.ui.WarmCreamDeep
+import com.lelebox.app.ui.WarmGray
 import kotlin.math.abs
 
 /** 2048 入口（L1 原生）：滑动 + 四方向大按钮双操作，最高分存档，合并动画可关 */
@@ -167,16 +170,34 @@ fun Game2048Screen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 极简方向键（老年双操作）：十字对称排布，上下/左右间距一致
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            MinimalDirButton(Dir.UP) { doMove(Dir.UP) }
-            Spacer(Modifier.height(28.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                MinimalDirButton(Dir.LEFT) { doMove(Dir.LEFT) }
-                MinimalDirButton(Dir.RIGHT) { doMove(Dir.RIGHT) }
-            }
-            Spacer(Modifier.height(28.dp))
-            MinimalDirButton(Dir.DOWN) { doMove(Dir.DOWN) }
+        // 街机风方向键：紧凑十字 + 弧形垫板，上下/左右对称均衡，箭头清晰
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(28.dp)),
+        ) {
+            ArcadeButton(
+                dir = Dir.UP,
+                onClick = { doMove(Dir.UP) },
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
+            )
+            ArcadeButton(
+                dir = Dir.DOWN,
+                onClick = { doMove(Dir.DOWN) },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+            )
+            ArcadeButton(
+                dir = Dir.LEFT,
+                onClick = { doMove(Dir.LEFT) },
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp),
+            )
+            ArcadeButton(
+                dir = Dir.RIGHT,
+                onClick = { doMove(Dir.RIGHT) },
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -231,21 +252,27 @@ fun Game2048Screen(
     }
 }
 
-/** 极简方向键：tonal 圆形 + 主色细箭头 + 按压缩放 */
+/** 街机风方向按钮：凸起圆形 + 主色箭头 + 按压缩放 */
 @Composable
-private fun MinimalDirButton(dir: Dir, onClick: () -> Unit) {
+private fun ArcadeButton(dir: Dir, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.92f else 1f)
+    val scale by animateFloatAsState(if (pressed) 0.9f else 1f)
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(64.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
+            .shadow(
+                elevation = if (pressed) 1.dp else 3.dp,
+                shape = CircleShape,
+                ambientColor = WarmCreamDeep,
+                spotColor = WarmGray.copy(alpha = 0.4f),
+            )
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(if (pressed) MaterialTheme.colorScheme.surfaceVariant else Color.White)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
             .clickable(interactionSource = interaction, indication = ripple()) { onClick() },
         contentAlignment = Alignment.Center,

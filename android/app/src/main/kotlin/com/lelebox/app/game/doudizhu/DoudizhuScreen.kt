@@ -273,12 +273,12 @@ private fun GameTable(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OpponentPanel(
-                    name = "电脑1",
+                    name = "孔子",
                     role = playerRoleText(game, 1),
                     count = game.hands[1].size,
                     backCount = game.hands[1].size,
                     active = game.phase == 1 && !game.over && game.current == 1,
-                    modifier = Modifier.width(120.dp),
+                    modifier = Modifier.width(112.dp),
                 )
                 // 中央桌面（牌桌已全屏，此处为透明出牌区）
                 Table(
@@ -288,12 +288,12 @@ private fun GameTable(
                         .fillMaxHeight(),
                 )
                 OpponentPanel(
-                    name = "电脑2",
+                    name = "庄子",
                     role = playerRoleText(game, 2),
                     count = game.hands[2].size,
                     backCount = game.hands[2].size,
                     active = game.phase == 1 && !game.over && game.current == 2,
-                    modifier = Modifier.width(120.dp),
+                    modifier = Modifier.width(112.dp),
                 )
             }
         }
@@ -375,37 +375,65 @@ private fun GameTable(
             }
         }
     }
-    }
-
-    if (game.over) {
+    // 遮罩在 Box 内最后声明 → 显示在最上层（赢=金 / 输=红横幅）；key(tick) 保证 game.over 变化时强制重组
+    key(tick) {
+        if (game.over) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xB3000000)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(if (game.winner == 0) "🎉" else "😊", fontSize = 64.sp)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                when {
-                    game.winner == 0 -> "你赢啦！"
-                    game.isLandlord(game.winner) -> "地主赢了，下次加油！"
-                    else -> "农民赢了！"
-                },
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(32.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                val win = game.winner == 0
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = if (win) Color(0xFFF0A93C) else Color(0xFFC0392B),
+                    border = androidx.compose.foundation.BorderStroke(3.dp, if (win) Color(0xFFFFE082) else Color(0xFFE57373)),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 40.dp, vertical = 22.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(if (win) "🎉" else "😊", fontSize = 52.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            when {
+                                win -> "你赢啦！"
+                                game.isLandlord(game.winner) -> "地主赢了"
+                                else -> "农民赢了"
+                            },
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = if (win) Color(0xFF4A3200) else Color.White,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            if (win) "打得真好，再来一局？" else "下次加油！",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (win) Color(0xFF6B4A00) else Color(0xFFFFE0E0),
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 ElderButton(text = "再来一局", onClick = ::onNewDeal, modifier = Modifier.weight(1f))
                 ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.weight(1f))
             }
         }
     }
-}
+    }
+    }
+    }
 
 private fun playerRoleText(game: DoudizhuGame, p: Int): String = when {
     game.landlord == -1 -> "—"
@@ -413,7 +441,7 @@ private fun playerRoleText(game: DoudizhuGame, p: Int): String = when {
     else -> "农民"
 }
 
-/** 中央出牌区：底牌 + 三家出的牌（上家左上/下家右上/你中下）；背景透明（牌桌已全屏） */
+/** 中央出牌区：底牌 + 三家出的牌（孔子左上/庄子右上/你中下）；背景透明（牌桌已全屏） */
 @Composable
 private fun Table(game: DoudizhuGame, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize()) {
@@ -426,31 +454,38 @@ private fun Table(game: DoudizhuGame, modifier: Modifier = Modifier) {
                 game.bottom.forEach { c -> MiniCard(c, Modifier.size(34.dp, 48.dp)) }
             }
         }
-        // 上家出的牌（左上）
-        TablePlay("电脑1", game.lastPlays[1], Modifier.align(Alignment.TopStart))
-        // 下家出的牌（右上）
-        TablePlay("电脑2", game.lastPlays[2], Modifier.align(Alignment.TopEnd))
+        // 孔子出的牌（左上）
+        TablePlay(game, 1, Modifier.align(Alignment.TopStart))
+        // 庄子出的牌（右上）
+        TablePlay(game, 2, Modifier.align(Alignment.TopEnd))
         // 你出的牌（中下）
-        TablePlay("你", game.lastPlays[0], Modifier.align(Alignment.BottomCenter))
+        TablePlay(game, 0, Modifier.align(Alignment.BottomCenter))
     }
 }
 
+/** 一家出牌区：出牌→放大展示牌；本轮"过"→显示"过"；轮到你→显示"请出牌"；其余留空 */
 @Composable
-private fun TablePlay(label: String, combo: Combo?, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, fontSize = 12.sp, color = Color(0xFFE8F0E4))
-        if (combo == null) {
-            Text("—", fontSize = 14.sp, color = Color(0xFFB9C9BF))
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                combo.cards.take(12).forEach { c -> MiniCard(c, Modifier.size(30.dp, 42.dp)) }
-                if (combo.cards.size > 12) Text("…", fontSize = 14.sp, color = Color.White)
+private fun TablePlay(game: DoudizhuGame, p: Int, modifier: Modifier = Modifier) {
+    val combo = game.lastPlays[p]
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        when {
+            combo != null -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    combo.cards.take(8).forEach { c -> MiniCard(c, Modifier.size(40.dp, 56.dp)) }
+                    if (combo.cards.size > 8) Text("…", fontSize = 16.sp, color = Color.White)
+                }
+            }
+            game.phase == 1 && !game.over && game.passedThisRound[p] -> {
+                Text("过", fontSize = 26.sp, color = Color(0xFFB9C9BF), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
+            game.phase == 1 && !game.over && p == 0 && game.current == 0 -> {
+                Text("请出牌", fontSize = 24.sp, color = Color(0xFFFFE082), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
         }
     }
 }
 
-/** 对手面板：头像占位 + 身份徽章 + 手牌牌背 + 张数 + 行动高亮 */
+/** 对手面板：头像+身份徽章同行、名字、手牌牌背、张数、行动高亮 */
 @Composable
 private fun OpponentPanel(
     name: String,
@@ -470,30 +505,33 @@ private fun OpponentPanel(
             modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 头像占位（即梦头像后替换）
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFD8CFC2)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(if (name == "电脑1") "👴" else "👵", fontSize = 20.sp)
+            // 头像 + 身份徽章同一行（节省纵向空间）
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // 头像占位（即梦头像后替换）
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFD8CFC2)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(if (name == "孔子") "🧓" else "👨‍🦳", fontSize = 20.sp)
+                }
+                // 身份徽章
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (role == "地主") Color(0xFFF0A93C) else Color(0xFF8FB58F),
+                ) {
+                    Text(
+                        role,
+                        fontSize = 11.sp,
+                        color = if (role == "地主") Color(0xFF4A3200) else Color.White,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                    )
+                }
             }
             Spacer(Modifier.height(3.dp))
             Text(name, style = MaterialTheme.typography.titleSmall)
-            // 身份徽章
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = if (role == "地主") Color(0xFFF0A93C) else Color(0xFF8FB58F),
-            ) {
-                Text(
-                    role,
-                    fontSize = 11.sp,
-                    color = if (role == "地主") Color(0xFF4A3200) else Color.White,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
-                )
-            }
             Spacer(Modifier.height(3.dp))
             // 对手手牌牌背（层叠一行，张数变化实时更新）
             if (backCount > 0) {

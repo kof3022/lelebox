@@ -82,8 +82,15 @@ fun canBeat(prev: Combo, next: Combo): Boolean {
 
 enum class PlayResult { OK, INVALID, GAME_OVER }
 
+/** AI 难度分层 */
+enum class DoudizhuLevel(val label: String) {
+    EASY("简单"), NORMAL("普通"), HARD("困难"),
+}
+
 /** 斗地主对局：0=玩家，1/2=AI；支持叫地主、出牌、双 AI、农民合作 */
 class DoudizhuGame {
+
+    var level = DoudizhuLevel.NORMAL
 
     val hands = Array(3) { mutableListOf<Card>() }
     val bottom = mutableListOf<Card>()
@@ -162,7 +169,7 @@ class DoudizhuGame {
         hands[p].sortByDescending { it.rank }
         phase = 1
         current = p
-        bottom.clear()
+        // bottom 保留用于桌面底牌展示
     }
 
     /** 玩家出牌；返回结果 */
@@ -226,27 +233,36 @@ class DoudizhuGame {
 
     private fun aiLead(p: Int): Combo? {
         val combos = findCombos(hands[p])
-        // 首选非炸弹最小组合（先出小牌），炸弹留后
         val normal = combos
             .filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
             .minByOrNull { it.mainRank * 10 + it.cards.size }
+        if (level == DoudizhuLevel.EASY) {
+            // 简单：在较优候选中随机
+            val pool = combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }.take(4)
+            if (pool.isNotEmpty()) return pool[Random.nextInt(pool.size)]
+        }
         if (normal != null) return normal
         return combos.minByOrNull { it.mainRank }
     }
 
     private fun aiFollow(p: Int): Combo? {
         val prev = lastCombo ?: return aiLead(p)
-        // 农民合作：队友出的牌不压（除非队友只剩少数牌且我方有绝对把握）
+        // 农民合作：队友出的牌不压（除非队友只剩少数牌）
         val teammate = findTeammate(p)
         if (teammate == lastPlayer && hands[teammate]!!.size > 4) return null
         val combos = findCombos(hands[p])
-        // 普通牌里找最小能压过的
         val normal = combos
             .filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
             .filter { canBeat(prev, it) }
             .minByOrNull { it.mainRank }
+        // 简单难度：能压也常不出（留牌）
+        if (level == DoudizhuLevel.EASY && normal != null && Random.nextInt(10) < 4) return null
         if (normal != null) return normal
-        // 炸弹/火箭兜底
+        // 困难难度：对手快赢（手牌≤2）才动用炸弹
+        if (level == DoudizhuLevel.HARD) {
+            val threat = (0..2).firstOrNull { it != p && it != teammate && hands[it]!!.size <= 2 }
+            if (threat == null) return null
+        }
         val big = combos
             .filter { it.type == ComboType.BOMB || it.type == ComboType.ROCKET }
             .filter { canBeat(prev, it) }

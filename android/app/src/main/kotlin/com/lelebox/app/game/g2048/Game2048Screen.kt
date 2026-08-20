@@ -42,12 +42,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.WarmCreamDeep
 import com.lelebox.app.ui.WarmGray
@@ -59,6 +61,7 @@ fun Game2048Screen(
     prefs: SharedPreferences,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val bestKey = "native_2048_best"
     var best by remember { mutableIntStateOf(prefs.getInt(bestKey, 0)) }
     var animEnabled by remember { mutableStateOf(prefs.getBoolean("anim_enabled", true)) }
@@ -89,7 +92,25 @@ fun Game2048Screen(
 
     fun doMove(dir: Dir) {
         if (over) return
-        if (game.move(dir)) refresh()
+        if (game.move(dir)) {
+            Sfx.click(context)
+            refresh()
+        }
+    }
+
+    // 一局结束反馈音效
+    LaunchedEffect(won, winDismissed) {
+        if (won && !winDismissed && !over) Sfx.success(context)
+    }
+    LaunchedEffect(over) {
+        if (over) Sfx.fail(context)
+    }
+
+    val encouragement = when {
+        score >= 10000 -> "太厉害了！离 2048 只差一点！"
+        score >= 3000 -> "很棒，继续加油！"
+        score >= 1000 -> "不错，越来越接近 2048 啦！"
+        else -> "再来一局，争取更高分！"
     }
 
     Column(
@@ -241,23 +262,40 @@ fun Game2048Screen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Text("😊", fontSize = 64.sp)
+            Spacer(Modifier.height(12.dp))
             Text("本局结束", style = MaterialTheme.typography.headlineMedium, color = Color.White)
-            Spacer(Modifier.height(8.dp))
-            Text("得分：$score　最高：$best", style = MaterialTheme.typography.bodyLarge, color = Color.White)
-            Spacer(Modifier.height(8.dp))
-            Text("没有可以合并的数字了，再来一局吧！", style = MaterialTheme.typography.bodyLarge, color = Color.White, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "得分：$score　　最高：$best",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                encouragement,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFFFFE0B2),
+                textAlign = TextAlign.Center,
+            )
             Spacer(Modifier.height(32.dp))
             ElderButton(text = "再来一局", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
-/** 街机风方向按钮：凸起圆形 + 主色箭头 + 按压缩放 */
+/** 街机风方向按钮：凸起圆形 + 主色箭头 + 上/下/左/右文字标识 + 按压缩放 */
 @Composable
 private fun ArcadeButton(dir: Dir, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.9f else 1f)
+    val label = when (dir) {
+        Dir.UP -> "上"
+        Dir.DOWN -> "下"
+        Dir.LEFT -> "左"
+        Dir.RIGHT -> "右"
+    }
     Box(
         modifier = modifier
             .size(64.dp)
@@ -277,17 +315,20 @@ private fun ArcadeButton(dir: Dir, onClick: () -> Unit, modifier: Modifier = Mod
             .clickable(interactionSource = interaction, indication = ripple()) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = DirArrows.of(dir),
-            contentDescription = when (dir) {
-                Dir.UP -> "向上滑动"
-                Dir.DOWN -> "向下滑动"
-                Dir.LEFT -> "向左滑动"
-                Dir.RIGHT -> "向右滑动"
-            },
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(30.dp),
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = DirArrows.of(dir),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(26.dp),
+            )
+            Text(
+                label,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 

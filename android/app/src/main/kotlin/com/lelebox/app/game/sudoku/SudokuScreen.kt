@@ -22,6 +22,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lelebox.app.R
+import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
 import com.lelebox.app.ui.ErrorSoft
@@ -125,9 +128,15 @@ private fun SudokuBoard(
     var candidateMode by remember { mutableStateOf(false) }
     var cands by remember { mutableStateOf<Map<Int, Set<Int>>>(emptyMap()) }
     var hintCount by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
 
     val errors = current.indices.filter { current[it] != 0 && current[it] != solved[it] }.toSet()
     val won = current.all { it != 0 } && errors.isEmpty()
+
+    // 完成音效
+    LaunchedEffect(won) {
+        if (won) Sfx.success(context)
+    }
 
     fun save() {
         val o = JSONObject()
@@ -153,12 +162,18 @@ private fun SudokuBoard(
         val pos = selected ?: return
         if (pos in givens) return
         if (candidateMode) {
+            // 做记号模式：先清空该格已填数字，让笔记立刻可见
+            if (current[pos] != 0) {
+                current = current.copyOf().apply { this[pos] = 0 }
+            }
             val cur = cands[pos].orEmpty()
             val next = if (d in cur) cur - d else cur + d
             cands = if (next.isEmpty()) cands - pos else cands + (pos to next)
+            Sfx.click(context)
         } else {
             current = current.copyOf().apply { this[pos] = d }
             cands = cands - pos
+            Sfx.click(context)
             save()
         }
     }
@@ -175,12 +190,19 @@ private fun SudokuBoard(
     }
 
     fun onHint() {
-        val wrong = current.indices.filter { current[it] != solved[it] }
+        // 优先提示「当前选中的格子」的正确数字
+        val sel = selected
+        val wrong = if (sel != null && current[sel] != solved[sel]) {
+            listOf(sel)
+        } else {
+            current.indices.filter { current[it] != solved[it] }
+        }
         if (wrong.isEmpty()) return
         val pos = wrong[Random.nextInt(wrong.size)]
         current = current.copyOf().apply { this[pos] = solved[pos] }
         cands = cands - pos
         hintCount++
+        Sfx.click(context)
         save()
     }
 
@@ -318,10 +340,17 @@ private fun SudokuBoard(
             Text("🎉", fontSize = 64.sp)
             Spacer(Modifier.height(12.dp))
             Text("完成！你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
-                "用时随意，慢慢想。${if (hintCount > 0) "（用了 $hintCount 次提示）" else ""}",
+                if (hintCount > 0) "用了 $hintCount 次提示，慢慢想也完成了" else "没有用提示，全部自己完成！",
                 style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFFFFE0B2),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "用心走的每一步都算数",
+                style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center,
             )
@@ -406,7 +435,7 @@ private fun SudokuCell(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (d in candidates) {
-                                    Text("$d", fontSize = 9.sp, color = Color(0xFF757575))
+                                    Text("$d", fontSize = 11.sp, color = Color(0xFF6E675E))
                                 }
                             }
                         }

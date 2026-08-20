@@ -47,21 +47,24 @@ import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
 import kotlinx.coroutines.delay
 
-/** 斗地主入口：选难度 → 横屏对局 */
+/** 斗地主入口：选难度 → 横屏对局（沉浸全屏，界面内自带紧凑返回/帮助） */
 @Composable
 fun DoudizhuScreen(
+    onBack: () -> Unit = {},
+    onHelp: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var level by remember { mutableStateOf<DoudizhuLevel?>(null) }
     when (val lv = level) {
-        null -> LevelSelect(onStart = { level = it }, modifier = modifier)
-        else -> GameTable(lv, onBackToLevels = { level = null }, modifier = modifier)
+        null -> LevelSelect(onStart = { level = it }, onBack = onBack, modifier = modifier)
+        else -> GameTable(lv, onBack = onBack, onHelp = onHelp, onBackToLevels = { level = null }, modifier = modifier)
     }
 }
 
 @Composable
 private fun LevelSelect(
     onStart: (DoudizhuLevel) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -71,6 +74,10 @@ private fun LevelSelect(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            ElderButton(text = "←", onClick = onBack, minHeight = 44.dp, modifier = Modifier.width(72.dp))
+        }
+        Spacer(Modifier.height(8.dp))
         Text("🃏", fontSize = 44.sp)
         Spacer(Modifier.height(8.dp))
         Text("斗地主", style = MaterialTheme.typography.headlineMedium)
@@ -98,6 +105,8 @@ private fun LevelSelect(
 @Composable
 private fun GameTable(
     level: DoudizhuLevel,
+    onBack: () -> Unit,
+    onHelp: () -> Unit,
     onBackToLevels: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -200,15 +209,38 @@ private fun GameTable(
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 状态行
+        // 状态行（紧凑：返回/帮助 + 回合状态，隐藏一切无关内容）
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(status, style = MaterialTheme.typography.titleMedium, color = if (game.current == 0 && !game.over && game.phase == 1) ElderGreen else MaterialTheme.colorScheme.onSurface)
+            ElderButton(
+                text = "←",
+                onClick = onBack,
+                minHeight = 44.dp,
+                modifier = Modifier.width(64.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            )
+            Text(
+                status,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (game.current == 0 && !game.over && game.phase == 1) ElderGreen else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
             Text(role, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("难度：${game.level.label}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ElderButton(
+                text = "帮助",
+                onClick = onHelp,
+                minHeight = 44.dp,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White,
+                ),
+            )
         }
 
         // 主区：左对手 | 中央桌面 | 右对手

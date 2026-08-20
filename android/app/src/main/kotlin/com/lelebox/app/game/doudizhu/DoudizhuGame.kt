@@ -104,6 +104,10 @@ class DoudizhuGame {
     var passCount = 0
     /** 三家各自出的上一手（用于出牌区展示） */
     val lastPlays = arrayOfNulls<Combo>(3)
+    /** 本轮是否出过牌（true=出过，false=未出或已过） */
+    val playedThisRound = BooleanArray(3)
+    /** 本轮是否已"过"（不出牌） */
+    val passedThisRound = BooleanArray(3)
     var winner = -1
     var over = false
 
@@ -124,6 +128,8 @@ class DoudizhuGame {
         lastPlayer = -1
         passCount = 0
         lastPlays.fill(null)
+        playedThisRound.fill(false)
+        passedThisRound.fill(false)
         winner = -1
         over = false
     }
@@ -181,6 +187,7 @@ class DoudizhuGame {
         lastCombo = combo
         lastPlayer = 0
         lastPlays[0] = combo
+        playedThisRound[0] = true
         passCount = 0
         if (hands[0].isEmpty()) { winner = 0; over = true; return PlayResult.GAME_OVER }
         current = next(0)
@@ -211,6 +218,7 @@ class DoudizhuGame {
         lastCombo = beat
         lastPlayer = p
         lastPlays[p] = beat
+        playedThisRound[p] = true
         passCount = 0
         if (hands[p].isEmpty()) { winner = p; over = true; return PlayResult.GAME_OVER }
         current = next(p)
@@ -218,10 +226,14 @@ class DoudizhuGame {
     }
 
     private fun doPass(p: Int) {
+        playedThisRound[p] = false
+        passedThisRound[p] = true
         passCount++
         if (passCount >= 2) {
             lastCombo = null
             lastPlays.fill(null) // 新一轮自由出牌，清空出牌区
+            playedThisRound.fill(false)
+            passedThisRound.fill(false)
             passCount = 0
         }
         current = next(p)

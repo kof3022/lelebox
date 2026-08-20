@@ -172,9 +172,32 @@ class DoudizhuGameTest {
         g.passCount = 0
         g.current = 1
         g.aiAct() // AI1 过
+        assertTrue(g.passedThisRound[1])
+        assertFalse(g.playedThisRound[1])
         g.aiAct() // AI2 过
         assertNull(g.lastCombo)
         assertEquals(0, g.current)
+        // 两家都过后新一轮开始，标记复位
+        assertFalse(g.passedThisRound[1])
+        assertFalse(g.passedThisRound[2])
+    }
+
+    @Test
+    fun `played flags update on play and pass`() {
+        val g = DoudizhuGame()
+        g.newDeal()
+        g.playerBid(true)
+        val single = g.hands[0].minBy { it.rank }
+        g.playerPlay(listOf(single))
+        assertTrue(g.playedThisRound[0])
+        // AI 行动至轮玩家或终局
+        var guard = 0
+        while (!g.over && g.current != 0 && guard < 10) {
+            g.aiAct()
+            guard++
+        }
+        // 玩家出的牌在展示区可见
+        assertNotNull(g.lastPlays[0])
     }
 
     @Test

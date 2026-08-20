@@ -3,6 +3,7 @@ package com.lelebox.app.game
 import androidx.compose.ui.graphics.Color
 import com.lelebox.app.R
 import com.lelebox.app.ui.Game2048
+import com.lelebox.app.ui.GameDoudizhu
 import com.lelebox.app.ui.GameGomoku
 import com.lelebox.app.ui.GameLink
 import com.lelebox.app.ui.GameMemory
@@ -30,6 +31,16 @@ data class GameEntry(
 object Games {
     /** 第一批（M1）：2048/数独/记忆翻牌原生；M2 起新增游戏（docs/11） */
     val firstBatch = listOf(
+        GameEntry(
+            id = "doudizhu",
+            title = "斗地主",
+            subtitle = "和电脑打牌，先出完赢",
+            help = "叫地主后先出完牌就赢。可以出单张、对子、三张、顺子等。点牌选中，再点「出牌」。",
+            kind = GameKind.NATIVE,
+            emoji = "🃏",
+            accent = GameDoudizhu,
+            iconRes = R.drawable.ic_game_doudizhu,
+        ),
         GameEntry(
             id = "spot",
             title = "找不同",

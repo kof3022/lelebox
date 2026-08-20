@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.lelebox.app.game.memory.MemoryGameScreen
 import com.lelebox.app.game.g2048.Game2048Screen
+import com.lelebox.app.game.doudizhu.DoudizhuScreen
 import com.lelebox.app.game.gomoku.GomokuScreen
 import com.lelebox.app.game.link.LinkGameScreen
 import com.lelebox.app.game.spot.SpotGameScreen
@@ -100,6 +101,9 @@ class GameShellActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                         )
                         GameKind.NATIVE -> when (game.id) {
+                            "doudizhu" -> DoudizhuScreen(
+                                modifier = Modifier.fillMaxSize(),
+                            )
                             "spot" -> SpotGameScreen(
                                 modifier = Modifier.fillMaxSize(),
                             )

@@ -183,11 +183,14 @@ class DoudizhuGame {
         if (phase != 1 || current != 0 || cards.isEmpty()) return PlayResult.INVALID
         val combo = parseCombo(cards) ?: return PlayResult.INVALID
         if (lastCombo != null && !canBeat(lastCombo!!, combo)) return PlayResult.INVALID
+        // 自由出牌（新一轮第一手）：清空上一轮展示，避免"过"残留
+        if (lastCombo == null) clearTable()
         hands[0].removeAll(cards)
         lastCombo = combo
         lastPlayer = 0
         lastPlays[0] = combo
         playedThisRound[0] = true
+        passedThisRound[0] = false
         passCount = 0
         if (hands[0].isEmpty()) { winner = 0; over = true; return PlayResult.GAME_OVER }
         current = next(0)
@@ -214,11 +217,14 @@ class DoudizhuGame {
             doPass(p)
             return PlayResult.OK
         }
+        // 自由出牌（新一轮第一手）：清空上一轮展示，避免"过"残留
+        if (lastCombo == null) clearTable()
         hands[p].removeAll(beat.cards)
         lastCombo = beat
         lastPlayer = p
         lastPlays[p] = beat
         playedThisRound[p] = true
+        passedThisRound[p] = false
         passCount = 0
         if (hands[p].isEmpty()) { winner = p; over = true; return PlayResult.GAME_OVER }
         current = next(p)
@@ -230,13 +236,17 @@ class DoudizhuGame {
         passedThisRound[p] = true
         passCount++
         if (passCount >= 2) {
-            lastCombo = null
-            lastPlays.fill(null) // 新一轮自由出牌，清空出牌区
-            playedThisRound.fill(false)
-            passedThisRound.fill(false)
+            lastCombo = null // 新一轮自由出牌；"过"与牌面保留展示，直到有人自由出牌才清空
             passCount = 0
         }
         current = next(p)
+    }
+
+    /** 新一轮第一手：清空桌面展示（各家出的牌与"过"标记） */
+    private fun clearTable() {
+        lastPlays.fill(null)
+        playedThisRound.fill(false)
+        passedThisRound.fill(false)
     }
 
     private fun next(p: Int) = (p + 1) % 3

@@ -38,6 +38,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.lelebox.app.game.memory.MemoryGameScreen
 import com.lelebox.app.game.g2048.Game2048Screen
 import com.lelebox.app.game.gomoku.GomokuScreen
+import com.lelebox.app.game.link.LinkGameScreen
 import com.lelebox.app.game.sudoku.SudokuScreen
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderTheme
@@ -98,6 +99,9 @@ class GameShellActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                         )
                         GameKind.NATIVE -> when (game.id) {
+                            "link" -> LinkGameScreen(
+                                modifier = Modifier.fillMaxSize(),
+                            )
                             "gomoku" -> GomokuScreen(
                                 prefs = prefs,
                                 modifier = Modifier.fillMaxSize(),

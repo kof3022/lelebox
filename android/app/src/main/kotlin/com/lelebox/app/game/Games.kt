@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.lelebox.app.R
 import com.lelebox.app.ui.Game2048
 import com.lelebox.app.ui.GameGomoku
+import com.lelebox.app.ui.GameLink
 import com.lelebox.app.ui.GameMemory
 import com.lelebox.app.ui.GameSudoku
 
@@ -28,6 +29,16 @@ data class GameEntry(
 object Games {
     /** 第一批（M1）：2048/数独/记忆翻牌原生；M2 起新增游戏（docs/11） */
     val firstBatch = listOf(
+        GameEntry(
+            id = "link",
+            title = "连连看",
+            subtitle = "消掉两张一样的牌",
+            help = "点两张一样的图案，中间的路没有挡住的牌就能消掉（最多拐两个弯）。全部消完就赢啦！",
+            kind = GameKind.NATIVE,
+            emoji = "🍎",
+            accent = GameLink,
+            iconRes = R.drawable.ic_game_link,
+        ),
         GameEntry(
             id = "gomoku",
             title = "五子棋",

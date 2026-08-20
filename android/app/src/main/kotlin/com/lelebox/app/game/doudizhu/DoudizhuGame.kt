@@ -83,8 +83,8 @@ fun canBeat(prev: Combo, next: Combo): Boolean {
 enum class PlayResult { OK, INVALID, GAME_OVER }
 
 /** AI 难度分层 */
-enum class DoudizhuLevel(val label: String) {
-    EASY("简单"), NORMAL("普通"), HARD("困难"),
+enum class DoudizhuLevel(val label: String, val hint: String) {
+    EASY("简单", "AI 出牌较慢"), NORMAL("普通", "AI 中等水平"), HARD("困难", "AI 很厉害"),
 }
 
 /** 斗地主对局：0=玩家，1/2=AI；支持叫地主、出牌、双 AI、农民合作 */

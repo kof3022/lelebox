@@ -64,7 +64,7 @@ object Games {
         GameEntry(
             id = "gomoku",
             title = "五子棋",
-            subtitle = "连成五个就赢",
+            subtitle = "先连成五个就赢",
             help = "你先下黑棋，电脑下白棋。横、竖、斜哪边先连成五个就赢。点一下棋盘交叉点落子。",
             kind = GameKind.NATIVE,
             emoji = "⚫",

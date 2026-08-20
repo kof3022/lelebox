@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -111,7 +112,13 @@ private fun GameTable(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val game = remember(level) { DoudizhuGame().apply { this.level = level } }
+    // 进入即自动发牌（先发牌、后叫地主）
+    val game = remember(level) {
+        DoudizhuGame().apply {
+            this.level = level
+            newDeal()
+        }
+    }
     var tick by remember { mutableIntStateOf(0) }
     var selected by remember { mutableStateOf<Set<Card>>(emptySet()) }
     var autoPlay by remember { mutableStateOf(false) }
@@ -203,15 +210,29 @@ private fun GameTable(
         else -> "你是农民"
     }
 
-    Column(
+    // 全屏牌桌：深绿绒布渐变铺满整屏 + 金色包边（即梦牌桌背景图后补替换此背景）
+    Box(
         modifier = modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF1E3B2E), Color(0xFF2C4A3B), Color(0xFF163024)),
+                ),
+            )
+            .border(3.dp, Color(0xFFC9A24B), RoundedCornerShape(20.dp))
             .padding(8.dp),
+    ) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 状态行（紧凑：返回/帮助 + 回合状态，隐藏一切无关内容）
+        // 状态行（半透明深色条保证可读，隐藏一切无关内容）
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0x99000000))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -228,10 +249,10 @@ private fun GameTable(
             Text(
                 status,
                 style = MaterialTheme.typography.titleMedium,
-                color = if (game.current == 0 && !game.over && game.phase == 1) ElderGreen else MaterialTheme.colorScheme.onSurface,
+                color = if (game.current == 0 && !game.over && game.phase == 1) Color(0xFF8BE08B) else Color.White,
                 modifier = Modifier.weight(1f),
             )
-            Text(role, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(role, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFD8E4DC))
             ElderButton(
                 text = "帮助",
                 onClick = onHelp,
@@ -255,10 +276,11 @@ private fun GameTable(
                     name = "电脑1",
                     role = playerRoleText(game, 1),
                     count = game.hands[1].size,
+                    backCount = game.hands[1].size,
                     active = game.phase == 1 && !game.over && game.current == 1,
                     modifier = Modifier.width(120.dp),
                 )
-                // 中央桌面
+                // 中央桌面（牌桌已全屏，此处为透明出牌区）
                 Table(
                     game = game,
                     modifier = Modifier
@@ -269,6 +291,7 @@ private fun GameTable(
                     name = "电脑2",
                     role = playerRoleText(game, 2),
                     count = game.hands[2].size,
+                    backCount = game.hands[2].size,
                     active = game.phase == 1 && !game.over && game.current == 2,
                     modifier = Modifier.width(120.dp),
                 )
@@ -277,28 +300,38 @@ private fun GameTable(
 
         Spacer(Modifier.height(6.dp))
 
-        // 叫地主阶段
+        // 叫地主阶段：底牌扣在桌上（牌背朝上，看不到），叫地主后翻开并插入地主手牌
         if (game.phase == 0) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                game.bottom.forEach { c -> MiniCard(c, Modifier.size(40.dp, 56.dp)) }
-                Spacer(Modifier.width(16.dp))
-                Text("底牌，你要当地主吗？", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.width(16.dp))
-                ElderButton(text = "叫地主", onClick = { onBid(true) }, minHeight = 56.dp)
-                Spacer(Modifier.width(10.dp))
-                ElderButton(text = "不叫", onClick = { onBid(false) }, minHeight = 56.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0x66000000))
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                repeat(3) { CardBack(Modifier.size(34.dp, 48.dp)) }
+                Text(
+                    "底牌已扣，叫地主后翻开",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color(0xFFE8F0E4),
+                    modifier = Modifier.weight(1f),
+                )
+                ElderButton(text = "叫地主", onClick = { onBid(true) }, minHeight = 52.dp)
+                ElderButton(text = "不叫", onClick = { onBid(false) }, minHeight = 52.dp)
             }
             Spacer(Modifier.height(6.dp))
         }
 
-        // 手牌（扇形排列，全部可见、可点）
-        if (game.phase == 1) {
+        // 手牌：发牌后（叫地主阶段）即可看到自己的牌；出牌阶段同样展示、可点
+        if (game.phase == 0 || game.phase == 1) {
             key(tick) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .height(86.dp),
+                        .height(78.dp),
                 ) {
                     game.hands[0].forEachIndexed { i, card ->
                         val angle = ((i - (game.hands[0].size - 1) / 2f) * 3f).coerceIn(-18f, 18f)
@@ -306,10 +339,14 @@ private fun GameTable(
                             card = card,
                             selected = card in selected,
                             angle = angle,
-                            onClick = {
-                                selected = if (card in selected) selected - card else selected + card
-                                Sfx.click(context)
-                                refresh()
+                            onClick = if (game.phase == 0) {
+                                {}
+                            } else {
+                                {
+                                    selected = if (card in selected) selected - card else selected + card
+                                    Sfx.click(context)
+                                    refresh()
+                                }
                             },
                             modifier = Modifier.offset(x = (-i * 7).dp),
                         )
@@ -317,6 +354,10 @@ private fun GameTable(
                 }
             }
             Spacer(Modifier.height(6.dp))
+        }
+
+        // 出牌按钮（仅出牌阶段）
+        if (game.phase == 1) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -333,6 +374,7 @@ private fun GameTable(
                 ElderButton(text = "重发", onClick = ::onNewDeal, modifier = Modifier.weight(1f), minHeight = 54.dp)
             }
         }
+    }
     }
 
     if (game.over) {
@@ -371,31 +413,25 @@ private fun playerRoleText(game: DoudizhuGame, p: Int): String = when {
     else -> "农民"
 }
 
-/** 中央桌面：底牌 + 三家出的牌（上家左上/下家右上/你中下） */
+/** 中央出牌区：底牌 + 三家出的牌（上家左上/下家右上/你中下）；背景透明（牌桌已全屏） */
 @Composable
 private fun Table(game: DoudizhuGame, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF2C4A3B), // 牌桌绿
-    ) {
-        Box(Modifier.fillMaxSize().padding(10.dp)) {
-            // 底牌（顶部中间）
-            if (game.phase == 1) {
-                Row(
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    game.bottom.forEach { c -> MiniCard(c, Modifier.size(34.dp, 48.dp)) }
-                }
+    Box(modifier.fillMaxSize()) {
+        // 底牌（顶部中间；叫地主后翻开，其余阶段隐藏）
+        if (game.phase == 1) {
+            Row(
+                modifier = Modifier.align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                game.bottom.forEach { c -> MiniCard(c, Modifier.size(34.dp, 48.dp)) }
             }
-            // 上家出的牌（左上）
-            TablePlay("电脑1", game.lastPlays[1], Modifier.align(Alignment.TopStart))
-            // 下家出的牌（右上）
-            TablePlay("电脑2", game.lastPlays[2], Modifier.align(Alignment.TopEnd))
-            // 你出的牌（中下）
-            TablePlay("你", game.lastPlays[0], Modifier.align(Alignment.BottomCenter))
         }
+        // 上家出的牌（左上）
+        TablePlay("电脑1", game.lastPlays[1], Modifier.align(Alignment.TopStart))
+        // 下家出的牌（右上）
+        TablePlay("电脑2", game.lastPlays[2], Modifier.align(Alignment.TopEnd))
+        // 你出的牌（中下）
+        TablePlay("你", game.lastPlays[0], Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -414,52 +450,86 @@ private fun TablePlay(label: String, combo: Combo?, modifier: Modifier = Modifie
     }
 }
 
-/** 对手面板：头像占位 + 身份徽章 + 张数 + 行动高亮 */
+/** 对手面板：头像占位 + 身份徽章 + 手牌牌背 + 张数 + 行动高亮 */
 @Composable
 private fun OpponentPanel(
     name: String,
     role: String,
     count: Int,
+    backCount: Int,
     active: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(14.dp),
-        color = if (active) Color(0xFFE5EFE3) else Color(0xFFF3EDE2),
+        color = if (active) Color(0xE6E5EFE3) else Color(0xD9F3EDE2),
         border = androidx.compose.foundation.BorderStroke(if (active) 2.dp else 1.dp, if (active) ElderGreen else Color(0xFFE4DBCB)),
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // 头像占位（即梦头像后替换）
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFD8CFC2)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(if (name == "电脑1") "👴" else "👵", fontSize = 24.sp)
+                Text(if (name == "电脑1") "👴" else "👵", fontSize = 20.sp)
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(3.dp))
             Text(name, style = MaterialTheme.typography.titleSmall)
             // 身份徽章
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(6.dp),
                 color = if (role == "地主") Color(0xFFF0A93C) else Color(0xFF8FB58F),
             ) {
                 Text(
                     role,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = if (role == "地主") Color(0xFF4A3200) else Color.White,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
                 )
             }
-            Spacer(Modifier.height(4.dp))
-            Text("剩余 $count 张", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(3.dp))
+            // 对手手牌牌背（层叠一行，张数变化实时更新）
+            if (backCount > 0) {
+                Box(Modifier.width(88.dp).height(15.dp)) {
+                    repeat(minOf(backCount, 14)) { i ->
+                        CardBack(
+                            Modifier
+                                .size(10.dp, 15.dp)
+                                .align(Alignment.CenterStart)
+                                .offset(x = (i * 5.5f).dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(3.dp))
+            }
+            Text("剩余 $count 张", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** 牌背：蓝色底 + 浅色内框（老花友好，高对比） */
+@Composable
+private fun CardBack(modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(3.dp)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(Color(0xFF2E5F9E))
+            .border(1.dp, Color(0xFF9EC1E8), shape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(7.dp, 10.dp)
+                .border(1.dp, Color(0xFF9EC1E8), RoundedCornerShape(1.dp)),
+        )
     }
 }
 

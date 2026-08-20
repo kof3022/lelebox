@@ -415,38 +415,20 @@ private fun SudokuCell(
                 fontWeight = if (isGiven) FontWeight.Bold else FontWeight.Normal,
             )
         } else if (candidates.isNotEmpty()) {
-            Column(
-                Modifier
+            // 数字串流式排版：避免 3x3 小格裁剪，老人看得清
+            Text(
+                text = candidates.sorted().joinToString(" "),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GameSudoku,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp,
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+                modifier = Modifier
                     .fillMaxSize()
-                    .padding(1.dp),
-            ) {
-                for (r in 0..2) {
-                    Row(
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                    ) {
-                        for (c in 0..2) {
-                            val d = r * 3 + c + 1
-                            Box(
-                                Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                if (d in candidates) {
-                                    Text(
-                                        "$d",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = GameSudoku,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                    .padding(2.dp),
+            )
         }
     }
 }

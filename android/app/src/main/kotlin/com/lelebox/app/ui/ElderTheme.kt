@@ -51,6 +51,7 @@ val ElderOrangeSoft = Color(0xFFF0E2D2)
 val Game2048 = Color(0xFF3E8E7E)           // 青绿
 val GameSudoku = Color(0xFF4A6FA5)         // 雾蓝
 val GameMemory = Color(0xFF7A5C9E)         // 灰紫
+val GameGomoku = Color(0xFF6E8B74)         // 鼠尾草灰绿（五子棋）
 
 // 功能色
 val SuccessSoft = Color(0xFFDCE9E0)

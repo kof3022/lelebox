@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -311,6 +312,15 @@ private fun ScenePanel(
                 }
             },
     ) {
+        // 即梦底图（可选）：铺满后差异层叠加其上
+        if (scene.bgRes != null) {
+            Image(
+                painter = painterResource(scene.bgRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
         Canvas(Modifier.fillMaxSize()) {
             scene.draw(this, variant)
             game.found.forEach { i ->

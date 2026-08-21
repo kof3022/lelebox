@@ -74,6 +74,21 @@ private fun DrawScope.circle(c: Color, cx: Float, cy: Float, rad: Float, stroke:
     else drawCircle(c, s.r(rad), Offset(s.x(cx), s.y(cy)), style = Stroke(width = s.r(stroke)))
 }
 
+private fun DrawScope.ellipse(c: Color, cx: Float, cy: Float, rx: Float, ry: Float) {
+    val s = SceneCtx(this)
+    drawOval(c, topLeft = Offset(s.x(cx - rx), s.y(cy - ry)), size = androidx.compose.ui.geometry.Size(s.r(rx * 2), s.r(ry * 2)))
+}
+
+private fun DrawScope.roundedRect(c: Color, lx: Float, ty: Float, rx: Float, by: Float, radius: Float = 30f) {
+    val s = SceneCtx(this)
+    drawRoundRect(
+        c,
+        topLeft = Offset(s.x(lx), s.y(ty)),
+        size = androidx.compose.ui.geometry.Size(s.r(rx - lx), s.r(by - ty)),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(s.r(radius), s.r(radius)),
+    )
+}
+
 private fun DrawScope.rect(c: Color, lx: Float, ty: Float, rx: Float, by: Float) {
     val s = SceneCtx(this)
     drawRect(c, topLeft = Offset(s.x(lx), s.y(ty)), size = androidx.compose.ui.geometry.Size(s.r(rx - lx), s.r(by - ty)))
@@ -84,12 +99,42 @@ private fun DrawScope.line(c: Color, x1: Float, y1: Float, x2: Float, y2: Float,
     drawLine(c, Offset(s.x(x1), s.y(y1)), Offset(s.x(x2), s.y(y2)), strokeWidth = s.r(w))
 }
 
-private fun DrawScope.skyAndGrass(sky: Color, grass: Color) {
-    rect(sky, 0f, 0f, 1000f, 720f)
-    rect(grass, 0f, 720f, 1000f, 1000f)
+/** 底部阴影（椭圆），给物体落地感 */
+private fun DrawScope.groundShadow(cx: Float, cy: Float, rx: Float, ry: Float = rx * 0.3f) {
+    ellipse(Color(0x33000000), cx, cy, rx, ry)
 }
 
+/** 天空 + 草地，带渐变与远处山丘层次 */
+private fun DrawScope.skyAndGrass(sky: Color, grass: Color) {
+    val s = SceneCtx(this)
+    // 天空渐变
+    drawRect(
+        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+            listOf(sky, Color.White.copy(alpha = 0.55f)),
+            startY = s.y(0f), endY = s.y(720f),
+        ),
+        topLeft = Offset(s.x(0f), s.y(0f)),
+        size = androidx.compose.ui.geometry.Size(s.r(1000f), s.r(720f)),
+    )
+    // 草地渐变
+    drawRect(
+        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+            listOf(grass, grass.copy(alpha = 0.7f)),
+            startY = s.y(720f), endY = s.y(1000f),
+        ),
+        topLeft = Offset(s.x(0f), s.y(720f)),
+        size = androidx.compose.ui.geometry.Size(s.r(1000f), s.r(280f)),
+    )
+    // 远山剪影
+    val hill = grass.copy(alpha = 0.45f)
+    ellipse(hill, 160f, 730f, 340f, 120f)
+    ellipse(hill, 820f, 740f, 300f, 110f)
+    ellipse(hill, 500f, 750f, 260f, 100f)
+}
+
+/** 太阳：光晕 + 圆盘 + 光芒 */
 private fun DrawScope.sun(cx: Float, cy: Float, rad: Float, color: Color, rays: Int) {
+    circle(color.copy(alpha = 0.30f), cx, cy, rad * 1.45f)
     circle(color, cx, cy, rad)
     for (i in 0 until rays) {
         val a = Math.toRadians((i * 360.0 / rays)).toFloat()
@@ -99,33 +144,40 @@ private fun DrawScope.sun(cx: Float, cy: Float, rad: Float, color: Color, rays: 
     }
 }
 
+/** 云：底座 + 多层圆 */
 private fun DrawScope.cloud(cx: Float, cy: Float, scale: Float, color: Color) {
-    circle(color, cx, cy, 40f * scale)
-    circle(color, cx - 42f * scale, cy + 14f * scale, 30f * scale)
-    circle(color, cx + 44f * scale, cy + 12f * scale, 32f * scale)
+    ellipse(color, cx, cy + 14f * scale, 78f * scale, 26f * scale)
+    circle(color, cx - 46f * scale, cy + 4f * scale, 32f * scale)
+    circle(color, cx + 46f * scale, cy + 2f * scale, 34f * scale)
+    circle(color, cx, cy - 18f * scale, 38f * scale)
 }
 
+/** 树：树干 + 树冠多层圆 + 阴影 + 高光 */
 private fun DrawScope.tree(tx: Float, ty: Float, crownColor: Color, withApples: Boolean, appleColor: Color = Color(0xFFD94F3D)) {
+    groundShadow(tx, ty + 165f, 135f)
     rect(Color(0xFF8A5A2B), tx - 26f, ty, tx + 26f, ty + 150f)
-    circle(crownColor, tx, ty, 110f)
-    circle(crownColor, tx - 80f, ty + 40f, 70f)
-    circle(crownColor, tx + 84f, ty + 36f, 72f)
+    circle(crownColor, tx, ty - 12f, 112f)
+    circle(crownColor, tx - 82f, ty + 42f, 70f)
+    circle(crownColor, tx + 86f, ty + 38f, 72f)
+    circle(crownColor.copy(alpha = 0.35f), tx - 40f, ty - 70f, 55f) // 高光
     if (withApples) {
-        circle(appleColor, tx, ty - 10f, 16f)
-        circle(appleColor, tx + 50f, ty + 30f, 15f)
-        circle(appleColor, tx - 55f, ty + 26f, 15f)
+        circle(appleColor, tx, ty - 20f, 16f)
+        circle(appleColor, tx + 52f, ty + 30f, 15f)
+        circle(appleColor, tx - 58f, ty + 26f, 15f)
     }
 }
 
+/** 鸟：身体 + 翅膀 */
 private fun DrawScope.bird(bx: Float, by: Float, color: Color) {
-    circle(color, bx, by, 16f)
-    circle(color, bx + 20f, by - 8f, 10f)
-    line(color, bx - 6f, by - 10f, bx + 10f, by - 18f, 4f)
-    line(color, bx + 12f, by - 16f, bx + 26f, by - 10f, 4f)
+    circle(color, bx, by, 15f)
+    circle(color, bx + 18f, by - 6f, 9f)
+    line(color, bx - 8f, by - 12f, bx + 10f, by - 20f, 4f)
+    line(color, bx + 12f, by - 18f, bx + 26f, by - 12f, 4f)
 }
 
+/** 花：茎 + 花瓣 + 花蕊 */
 private fun DrawScope.flower(fx: Float, fy: Float, petal: Color) {
-    circle(Color(0xFF6A994E), fx, fy + 16f, 12f)
+    line(Color(0xFF6A994E), fx, fy, fx, fy + 20f, 5f)
     for (i in 0 until 5) {
         val a = Math.toRadians((i * 72.0)).toFloat()
         circle(petal, fx + Math.cos(a.toDouble()).toFloat() * 16f, fy + Math.sin(a.toDouble()).toFloat() * 16f, 13f)

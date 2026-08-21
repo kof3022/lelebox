@@ -301,8 +301,12 @@ private fun ScenePanel(
             }
             .pointerInput(game.found.size, hintIdx) {
                 detectTapGestures { offset ->
-                    val nx = offset.x / size.width * 1000f
-                    val ny = offset.y / size.height * 1000f
+                    // 与 SceneCtx 一致的逆映射：minDimension 等比缩放 + 居中
+                    val k = minOf(size.width, size.height) / 1000f
+                    val ox = (size.width - 1000f * k) / 2f
+                    val oy = (size.height - 1000f * k) / 2f
+                    val nx = (offset.x - ox) / k
+                    val ny = (offset.y - oy) / k
                     onTap(nx, ny)
                 }
             },

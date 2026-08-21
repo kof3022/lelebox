@@ -1,4 +1,4 @@
-package com.lelebox.app.game.spot
+﻿package com.lelebox.app.game.spot
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -9,11 +9,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 /** 一处差异（0..1000 归一坐标）+ 说明 */
 data class SpotDiff(val rect: Rect, val desc: String)
 
-/** 一个关卡场景：名称 + 差异表 + 绘制函数（variant=true 为变体图） */
+/** 一个关卡场景：名称 + 差异表 + 绘制函数（variant=true 为变体图）；bgRes=即梦底图（null 则程序化绘制） */
 data class SpotSceneDef(
     val name: String,
     val diffs: List<SpotDiff>,
-    val draw: DrawScope.(variant: Boolean) -> Unit,
+    val draw: DrawScope.(variant: Boolean) -> Unit = {},
+    val bgRes: Int? = null,
 )
 
 /**
@@ -216,7 +217,7 @@ private fun DrawScope.drawGarden(variant: Boolean) {
     if (!variant) bird(830f, 200f, Color(0xFF3E6B8A))
 }
 
-val SCENE_GARDEN = SpotSceneDef("花园", GARDEN_DIFFS) { drawGarden(it) }
+val SCENE_GARDEN = SpotSceneDef(name = "花园", diffs = GARDEN_DIFFS, draw = { drawGarden(it) })
 
 private val LIVING_DIFFS = listOf(
     SpotDiff(Rect(700f, 200f, 940f, 420f), "电视画面"),
@@ -253,7 +254,7 @@ private fun DrawScope.drawLiving(variant: Boolean) {
     }
 }
 
-val SCENE_LIVING = SpotSceneDef("客厅", LIVING_DIFFS) { drawLiving(it) }
+val SCENE_LIVING = SpotSceneDef(name = "客厅", diffs = LIVING_DIFFS, draw = { drawLiving(it) })
 
 private val ORCHARD_DIFFS = listOf(
     SpotDiff(Rect(430f, 80f, 600f, 300f), "太阳颜色"),
@@ -288,7 +289,7 @@ private fun DrawScope.drawOrchard(variant: Boolean) {
     flower(330f, 880f, if (variant) Color(0xFFE85D5D) else Color(0xFFF2A0C0))
 }
 
-val SCENE_ORCHARD = SpotSceneDef("果园", ORCHARD_DIFFS) { drawOrchard(it) }
+val SCENE_ORCHARD = SpotSceneDef(name = "果园", diffs = ORCHARD_DIFFS, draw = { drawOrchard(it) })
 
 // ============ 中等（6 处） ============
 
@@ -337,7 +338,7 @@ private fun DrawScope.drawPark(variant: Boolean) {
     tree(760f, 320f, Color(0xFF5E9E4F), withApples = false)
 }
 
-val SCENE_PARK = SpotSceneDef("公园", PARK_DIFFS) { drawPark(it) }
+val SCENE_PARK = SpotSceneDef(name = "公园", diffs = PARK_DIFFS, draw = { drawPark(it) })
 
 private val SEASIDE_DIFFS = listOf(
     SpotDiff(Rect(430f, 70f, 630f, 280f), "太阳"),
@@ -386,7 +387,7 @@ private fun DrawScope.starfish(sx: Float, sy: Float) {
     circle(Color(0xFFD95F2B), sx, sy + 18f, 8f)
 }
 
-val SCENE_SEASIDE = SpotSceneDef("海边", SEASIDE_DIFFS) { drawSeaside(it) }
+val SCENE_SEASIDE = SpotSceneDef(name = "海边", diffs = SEASIDE_DIFFS, draw = { drawSeaside(it) })
 
 private val FARM_DIFFS = listOf(
     SpotDiff(Rect(680f, 520f, 900f, 820f), "拖拉机"),
@@ -427,7 +428,7 @@ private fun DrawScope.drawFarm(variant: Boolean) {
     }
 }
 
-val SCENE_FARM = SpotSceneDef("农田", FARM_DIFFS) { drawFarm(it) }
+val SCENE_FARM = SpotSceneDef(name = "农田", diffs = FARM_DIFFS, draw = { drawFarm(it) })
 
 // ============ 困难（7 处） ============
 
@@ -476,7 +477,7 @@ private fun DrawScope.drawSnow(variant: Boolean) {
     }
 }
 
-val SCENE_SNOW = SpotSceneDef("雪景", SNOW_DIFFS) { drawSnow(it) }
+val SCENE_SNOW = SpotSceneDef(name = "雪景", diffs = SNOW_DIFFS, draw = { drawSnow(it) })
 
 private val STREET_DIFFS = listOf(
     SpotDiff(Rect(80f, 560f, 400f, 860f), "汽车颜色"),
@@ -529,7 +530,7 @@ private fun DrawScope.drawStreet(variant: Boolean) {
     }
 }
 
-val SCENE_STREET = SpotSceneDef("街角", STREET_DIFFS) { drawStreet(it) }
+val SCENE_STREET = SpotSceneDef(name = "街角", diffs = STREET_DIFFS, draw = { drawStreet(it) })
 
 private val NIGHT_DIFFS = listOf(
     SpotDiff(Rect(300f, 60f, 420f, 180f), "月亮颜色"),
@@ -580,4 +581,4 @@ private fun DrawScope.drawNight(variant: Boolean) {
     }
 }
 
-val SCENE_NIGHT = SpotSceneDef("夜景", NIGHT_DIFFS) { drawNight(it) }
+val SCENE_NIGHT = SpotSceneDef(name = "夜景", diffs = NIGHT_DIFFS, draw = { drawNight(it) })

@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.lelebox.app.R
 
 /** 一处差异（0..1000 归一坐标）+ 说明 */
 data class SpotDiff(val rect: Rect, val desc: String)
@@ -194,6 +195,14 @@ private fun DrawScope.butterfly(fx: Float, fy: Float, color: Color) {
     line(Color(0xFF5A3A22), fx, fy - 20f, fx, fy + 20f, 3f)
 }
 
+/** 苹果串：叠在底图树上（底图树不结果，苹果为差异元素） */
+private fun DrawScope.appleCluster(tx: Float, ty: Float, color: Color = Color(0xFFD94F3D)) {
+    circle(color, tx - 12f, ty - 6f, 16f)
+    circle(color, tx + 42f, ty + 6f, 15f)
+    circle(color, tx - 70f, ty + 4f, 15f)
+    circle(color, tx + 10f, ty + 46f, 13f)
+}
+
 // ============ 简单（5 处） ============
 
 private val GARDEN_DIFFS = listOf(
@@ -204,20 +213,18 @@ private val GARDEN_DIFFS = listOf(
     SpotDiff(Rect(500f, 470f, 760f, 760f), "树上的苹果"),
 )
 
+/** 花园：只画差异小元素（太阳光芒数 / 云 / 左花颜色 / 小鸟 / 苹果），底图为即梦空景 */
 private fun DrawScope.drawGarden(variant: Boolean) {
-    skyAndGrass(Color(0xFFBBDEF5), Color(0xFFA8D8A0))
     sun(560f, 200f, 85f, Color(0xFFF6C453), if (variant) 5 else 8)
     if (!variant) cloud(220f, 180f, 1f, Color.White)
-    cloud(760f, 120f, 0.8f, Color.White)
-    tree(620f, 480f, Color(0xFF5E9E4F), withApples = !variant)
+    if (!variant) appleCluster(620f, 440f)
     flower(220f, 790f, if (variant) Color(0xFFF2A0C0) else Color(0xFFD94F3D))
-    flower(700f, 830f, Color(0xFFE8A33D))
-    flower(880f, 760f, Color(0xFF8A5AC9))
-    flower(120f, 900f, Color(0xFFE8A33D))
     if (!variant) bird(830f, 200f, Color(0xFF3E6B8A))
 }
 
-val SCENE_GARDEN = SpotSceneDef(name = "花园", diffs = GARDEN_DIFFS, draw = { drawGarden(it) })
+val SCENE_GARDEN = SpotSceneDef(
+    name = "花园", diffs = GARDEN_DIFFS, draw = { drawGarden(it) }, bgRes = R.drawable.spot_garden,
+)
 
 private val LIVING_DIFFS = listOf(
     SpotDiff(Rect(700f, 200f, 940f, 420f), "电视画面"),
@@ -227,25 +234,13 @@ private val LIVING_DIFFS = listOf(
     SpotDiff(Rect(470f, 430f, 760f, 700f), "沙发靠垫颜色"),
 )
 
+/** 客厅：只画差异小元素（电视画面色 / 台灯光晕 / 窗台花 / 靠垫色 / 猫） */
 private fun DrawScope.drawLiving(variant: Boolean) {
-    rect(Color(0xFFF3E3C8), 0f, 0f, 1000f, 1000f) // 墙面
-    rect(Color(0xFFB98D5F), 0f, 860f, 1000f, 1000f) // 地板
-    // 窗户 + 窗台花
-    rect(Color(0xFFBFE3F0), 150f, 420f, 380f, 720f)
-    line(Color(0xFF8A5A2B), 265f, 420f, 265f, 720f, 6f)
-    line(Color(0xFF8A5A2B), 150f, 570f, 380f, 570f, 6f)
-    if (!variant) flower(265f, 830f, Color(0xFFE85D5D))
-    // 电视
-    rect(Color(0xFF2E2A25), 720f, 200f, 930f, 420f)
-    rect(if (variant) Color(0xFF9AA5A8) else Color(0xFF7FBFE8), 735f, 215f, 915f, 400f) // 画面（变体灰屏）
-    // 沙发
-    rect(Color(0xFF9A6B3F), 470f, 430f, 780f, 700f)
+    rect(if (variant) Color(0xFF9AA5A8) else Color(0xFF7FBFE8), 735f, 215f, 915f, 400f) // 电视画面
+    if (!variant) flower(265f, 830f, Color(0xFFE85D5D)) // 窗台花
     rect(if (variant) Color(0xFF5E8C5E) else Color(0xFFC9A26B), 490f, 450f, 760f, 600f) // 靠垫
-    // 台灯
-    rect(Color(0xFF7A5230), 190f, 620f, 210f, 800f)
-    circle(if (variant) Color(0xFFB9A98D) else Color(0xFFF6C453), 200f, 600f, 50f) // 灯光
-    if (!variant) circle(Color(0x66F6C453), 200f, 560f, 90f)
-    // 猫
+    circle(if (variant) Color(0xFFB9A98D) else Color(0xFFF6C453), 200f, 600f, 50f) // 台灯光
+    if (!variant) circle(Color(0x66F6C453), 200f, 560f, 90f) // 光晕
     if (!variant) {
         circle(Color(0xFFE8A33D), 520f, 780f, 30f)
         circle(Color(0xFFE8A33D), 550f, 800f, 26f)
@@ -254,7 +249,9 @@ private fun DrawScope.drawLiving(variant: Boolean) {
     }
 }
 
-val SCENE_LIVING = SpotSceneDef(name = "客厅", diffs = LIVING_DIFFS, draw = { drawLiving(it) })
+val SCENE_LIVING = SpotSceneDef(
+    name = "客厅", diffs = LIVING_DIFFS, draw = { drawLiving(it) }, bgRes = R.drawable.spot_living,
+)
 
 private val ORCHARD_DIFFS = listOf(
     SpotDiff(Rect(430f, 80f, 600f, 300f), "太阳颜色"),
@@ -264,12 +261,10 @@ private val ORCHARD_DIFFS = listOf(
     SpotDiff(Rect(100f, 820f, 400f, 960f), "草丛小花颜色"),
 )
 
+/** 果园：只画差异小元素（太阳色 / 苹果色 / 篮中果数量 / 小鸟 / 小花色） */
 private fun DrawScope.drawOrchard(variant: Boolean) {
-    skyAndGrass(Color(0xFFD7E9F5), Color(0xFFB5D99C))
     sun(500f, 180f, 70f, if (variant) Color(0xFFF6C453) else Color(0xFFF08A3C), 8)
-    tree(280f, 520f, Color(0xFF5E9E4F), withApples = true, appleColor = if (variant) Color(0xFF6FAF5E) else Color(0xFFD94F3D))
-    // 果篮
-    rect(Color(0xFFC9A26B), 760f, 620f, 900f, 700f)
+    appleCluster(280f, 470f, if (variant) Color(0xFF6FAF5E) else Color(0xFFD94F3D)) // 树上苹果色
     if (variant) {
         circle(Color(0xFFD94F3D), 790f, 600f, 15f)
         circle(Color(0xFFD94F3D), 830f, 600f, 15f)
@@ -281,15 +276,15 @@ private fun DrawScope.drawOrchard(variant: Boolean) {
         circle(Color(0xFFD94F3D), 810f, 585f, 15f)
         circle(Color(0xFFD94F3D), 850f, 585f, 15f)
     }
-    tree(860f, 520f, Color(0xFF5E9E4F), withApples = false)
     if (!variant) bird(880f, 180f, Color(0xFF3E6B8A))
-    // 地面小花（差异5：颜色）
     flower(170f, 880f, if (variant) Color(0xFFF2A0C0) else Color(0xFFE85D5D))
     flower(260f, 910f, if (variant) Color(0xFFF2A0C0) else Color(0xFFE85D5D))
     flower(330f, 880f, if (variant) Color(0xFFE85D5D) else Color(0xFFF2A0C0))
 }
 
-val SCENE_ORCHARD = SpotSceneDef(name = "果园", diffs = ORCHARD_DIFFS, draw = { drawOrchard(it) })
+val SCENE_ORCHARD = SpotSceneDef(
+    name = "果园", diffs = ORCHARD_DIFFS, draw = { drawOrchard(it) }, bgRes = R.drawable.spot_orchard,
+)
 
 // ============ 中等（6 处） ============
 
@@ -302,29 +297,23 @@ private val PARK_DIFFS = listOf(
     SpotDiff(Rect(30f, 500f, 155f, 900f), "栅栏的柱子"),
 )
 
+/** 公园：只画差异小元素（风筝 / 长椅色 / 鸭子 / 气球 / 喷泉水 / 栅栏柱） */
 private fun DrawScope.drawPark(variant: Boolean) {
-    skyAndGrass(Color(0xFFD7E9F5), Color(0xFFB5D99C))
-    sun(170f, 130f, 70f, Color(0xFFF6C453), 8)
     if (!variant) {
         line(Color(0xFF7A5C3E), 560f, 320f, 560f, 560f, 4f)
         rect(Color(0xFFE85D5D), 520f, 240f, 600f, 320f)
         line(Color.White, 520f, 240f, 600f, 320f, 3f)
         line(Color.White, 600f, 240f, 520f, 320f, 3f)
     }
-    rect(Color(0xFF9AA5A8), 210f, 440f, 430f, 520f)
-    circle(Color(0xFF7FA6B8), 320f, 440f, 40f)
     if (!variant) {
         circle(Color(0xFF7FBFE8), 320f, 400f, 22f)
         circle(Color(0xFF7FBFE8), 320f, 370f, 14f)
     }
-    circle(Color(0xFF6FB4D6), 620f, 690f, 70f)
     if (variant) bird(590f, 680f, Color(0xFFF2C14E)) else {
         bird(580f, 680f, Color(0xFFF2C14E))
         bird(640f, 690f, Color(0xFFF2C14E))
     }
     rect(if (variant) Color(0xFF5E8C5E) else Color(0xFF9A6B3F), 150f, 740f, 390f, 820f)
-    rect(Color(0xFF7A5230), 160f, 820f, 210f, 880f)
-    rect(Color(0xFF7A5230), 330f, 820f, 380f, 880f)
     if (!variant) {
         line(Color(0xFF7A5C3E), 820f, 760f, 820f, 880f, 4f)
         circle(Color(0xFFE85D5D), 820f, 730f, 30f)
@@ -333,12 +322,11 @@ private fun DrawScope.drawPark(variant: Boolean) {
         val px = 60f + i * 20f
         if (!variant || i != 2) rect(Color(0xFFC9A26B), px, 560f, px + 14f, 900f)
     }
-    rect(Color(0xFFC9A26B), 40f, 700f, 150f, 716f)
-    rect(Color(0xFFC9A26B), 40f, 800f, 150f, 816f)
-    tree(760f, 320f, Color(0xFF5E9E4F), withApples = false)
 }
 
-val SCENE_PARK = SpotSceneDef(name = "公园", diffs = PARK_DIFFS, draw = { drawPark(it) })
+val SCENE_PARK = SpotSceneDef(
+    name = "公园", diffs = PARK_DIFFS, draw = { drawPark(it) }, bgRes = R.drawable.spot_park,
+)
 
 private val SEASIDE_DIFFS = listOf(
     SpotDiff(Rect(430f, 70f, 630f, 280f), "太阳"),
@@ -349,35 +337,27 @@ private val SEASIDE_DIFFS = listOf(
     SpotDiff(Rect(560f, 740f, 800f, 880f), "浪花"),
 )
 
+/** 海边：只画差异小元素（太阳 / 小船 / 伞色 / 海星 / 海鸥 / 浪花） */
 private fun DrawScope.drawSeaside(variant: Boolean) {
-    rect(Color(0xFFBBDEF5), 0f, 0f, 1000f, 560f) // 天
-    rect(Color(0xFF4E9BC4), 0f, 560f, 1000f, 900f) // 海
-    rect(Color(0xFFE8D9A8), 0f, 900f, 1000f, 1000f) // 沙滩
     sun(520f, 170f, 75f, Color(0xFFF6C453), 8)
     if (!variant) {
-        // 小船
         rect(Color(0xFF8A5A2B), 190f, 740f, 360f, 800f)
         line(Color(0xFF5A3A22), 260f, 740f, 260f, 660f, 6f)
         rect(Color.White, 240f, 600f, 280f, 680f)
     }
-    // 遮阳伞
-    rect(Color(0xFF7A5230), 800f, 540f, 830f, 620f)
-    circle(if (variant) Color(0xFFF2A0C0) else Color(0xFFE85D5D), 790f, 520f, 80f)
+    circle(if (variant) Color(0xFFF2A0C0) else Color(0xFFE85D5D), 790f, 520f, 80f) // 伞面
     if (variant) bird(830f, 180f, Color(0xFF3E6B8A)) else {
         bird(820f, 170f, Color(0xFF3E6B8A))
         bird(880f, 200f, Color(0xFF3E6B8A))
     }
-    // 海星
     if (variant) starfish(180f, 920f) else {
         starfish(180f, 920f)
         starfish(240f, 930f)
     }
-    // 浪花
     if (variant) rect(Color.White, 600f, 800f, 660f, 820f) else {
         rect(Color.White, 600f, 800f, 660f, 820f)
         rect(Color.White, 700f, 820f, 760f, 840f)
     }
-    cloud(120f, 120f, 0.8f, Color.White)
 }
 
 private fun DrawScope.starfish(sx: Float, sy: Float) {
@@ -387,7 +367,9 @@ private fun DrawScope.starfish(sx: Float, sy: Float) {
     circle(Color(0xFFD95F2B), sx, sy + 18f, 8f)
 }
 
-val SCENE_SEASIDE = SpotSceneDef(name = "海边", diffs = SEASIDE_DIFFS, draw = { drawSeaside(it) })
+val SCENE_SEASIDE = SpotSceneDef(
+    name = "海边", diffs = SEASIDE_DIFFS, draw = { drawSeaside(it) }, bgRes = R.drawable.spot_seaside,
+)
 
 private val FARM_DIFFS = listOf(
     SpotDiff(Rect(680f, 520f, 900f, 820f), "拖拉机"),
@@ -398,28 +380,20 @@ private val FARM_DIFFS = listOf(
     SpotDiff(Rect(800f, 100f, 950f, 220f), "云朵"),
 )
 
+/** 农田：只画差异小元素（拖拉机 / 稻草人帽色 / 奶牛 / 庄稼行数 / 谷仓门 / 云） */
 private fun DrawScope.drawFarm(variant: Boolean) {
-    skyAndGrass(Color(0xFFD7E9F5), Color(0xFFB5D99C))
     cloud(860f, 160f, 0.8f, if (variant) Color(0xFFE8E4DA) else Color.White)
-    // 谷仓
-    rect(Color(0xFFB0453E), 430f, 260f, 620f, 560f)
-    rect(if (variant) Color(0xFF6E4A2F) else Color(0xFF8A5A2B), 500f, 400f, 550f, 560f) // 门
-    // 稻草人
-    rect(Color(0xFF7A5230), 260f, 430f, 290f, 620f)
-    circle(if (variant) Color(0xFF5E8C5E) else Color(0xFFF08A3C), 275f, 400f, 45f) // 帽子
-    line(Color(0xFF7A5230), 240f, 460f, 310f, 470f, 10f)
-    // 奶牛
+    rect(if (variant) Color(0xFF6E4A2F) else Color(0xFF8A5A2B), 500f, 400f, 550f, 560f) // 谷仓门
+    circle(if (variant) Color(0xFF5E8C5E) else Color(0xFFF08A3C), 275f, 400f, 45f) // 稻草人帽子
     if (!variant) {
         rect(Color(0xFFF3F0E8), 540f, 760f, 660f, 860f)
         rect(Color(0xFF2E2A25), 540f, 760f, 560f, 860f)
         circle(Color(0xFFF3F0E8), 590f, 740f, 30f)
     }
-    // 庄稼行
     for (i in 0 until 4) {
         val cx = 150f + i * 100f
         if (!variant || i < 3) rect(Color(0xFF6FAF5E), cx, 800f, cx + 30f, 950f)
     }
-    // 拖拉机
     if (!variant) {
         circle(Color(0xFF2E2A25), 720f, 780f, 36f)
         circle(Color(0xFF2E2A25), 840f, 780f, 36f)
@@ -428,7 +402,9 @@ private fun DrawScope.drawFarm(variant: Boolean) {
     }
 }
 
-val SCENE_FARM = SpotSceneDef(name = "农田", diffs = FARM_DIFFS, draw = { drawFarm(it) })
+val SCENE_FARM = SpotSceneDef(
+    name = "农田", diffs = FARM_DIFFS, draw = { drawFarm(it) }, bgRes = R.drawable.spot_farm,
+)
 
 // ============ 困难（7 处） ============
 
@@ -442,33 +418,23 @@ private val SNOW_DIFFS = listOf(
     SpotDiff(Rect(300f, 80f, 420f, 200f), "月亮颜色"),
 )
 
+/** 雪景：只画差异小元素（月亮色 / 星星 / 屋顶雪 / 烟囱烟 / 树雪 / 雪橇 / 雪人） */
 private fun DrawScope.drawSnow(variant: Boolean) {
-    rect(Color(0xFF2B3A55), 0f, 0f, 1000f, 1000f) // 夜空
-    rect(Color(0xFFE8EEF4), 0f, 760f, 1000f, 1000f) // 雪地
     circle(if (variant) Color(0xFFE8E0C8) else Color(0xFFF6C453), 360f, 140f, 55f) // 月亮
     for (i in 0 until 3) {
         if (!variant || i < 2) circle(Color.White, 110f + i * 60f, 140f + (i % 2) * 40f, 10f) // 星星
     }
-    // 房子
-    rect(Color(0xFF7A5230), 430f, 360f, 700f, 700f)
-    rect(Color(0xFF5E3A22), 540f, 520f, 600f, 700f)
-    // 屋顶 + 积雪
-    line(Color(0xFF8A3A2E), 400f, 360f, 730f, 300f, 24f)
-    if (!variant) rect(Color.White, 430f, 300f, 700f, 350f)
+    if (!variant) rect(Color.White, 430f, 300f, 700f, 350f) // 屋顶积雪
     if (variant) rect(Color(0xFF2E2A25), 650f, 240f, 690f, 380f) else {
         rect(Color(0xFF2E2A25), 650f, 240f, 690f, 380f)
         rect(Color(0xFFB9B9B9), 640f, 180f, 700f, 260f) // 烟
         circle(Color(0xFFB9B9B9), 670f, 160f, 24f)
     }
-    // 树 + 雪
-    tree(840f, 480f, if (variant) Color(0xFF4E8F4E) else Color(0xFF5E9E4F), withApples = false)
-    if (!variant) circle(Color.White, 840f, 400f, 40f)
-    // 雪橇
+    if (!variant) circle(Color.White, 840f, 400f, 40f) // 树上的雪
     if (!variant) {
         rect(Color(0xFFC4623C), 750f, 800f, 880f, 830f)
         rect(Color(0xFF8A5A2B), 730f, 830f, 890f, 845f)
     }
-    // 雪人
     if (!variant) {
         circle(Color.White, 330f, 740f, 80f)
         circle(Color.White, 330f, 640f, 55f)
@@ -477,7 +443,9 @@ private fun DrawScope.drawSnow(variant: Boolean) {
     }
 }
 
-val SCENE_SNOW = SpotSceneDef(name = "雪景", diffs = SNOW_DIFFS, draw = { drawSnow(it) })
+val SCENE_SNOW = SpotSceneDef(
+    name = "雪景", diffs = SNOW_DIFFS, draw = { drawSnow(it) }, bgRes = R.drawable.spot_snow,
+)
 
 private val STREET_DIFFS = listOf(
     SpotDiff(Rect(80f, 560f, 400f, 860f), "汽车颜色"),
@@ -489,48 +457,36 @@ private val STREET_DIFFS = listOf(
     SpotDiff(Rect(100f, 100f, 300f, 200f), "云朵"),
 )
 
+/** 街角：只画差异小元素（云 / 窗灯 / 路灯 / 花箱 / 车色 / 自行车 / 小猫） */
 private fun DrawScope.drawStreet(variant: Boolean) {
-    rect(Color(0xFFD7E9F5), 0f, 0f, 1000f, 560f)
-    rect(Color(0xFF9AA5A8), 0f, 560f, 1000f, 760f) // 路
-    rect(Color(0xFFF3E3C8), 0f, 760f, 1000f, 1000f) // 人行道
     cloud(200f, 150f, 0.8f, if (variant) Color(0xFFE8E4DA) else Color.White)
-    // 房子
-    rect(Color(0xFFE8C9A0), 100f, 200f, 380f, 560f)
-    rect(Color(0xFFB98D5F), 220f, 340f, 300f, 560f)
     rect(if (variant) Color(0xFF6E4A2F) else Color(0xFFF6C453), 140f, 240f, 180f, 300f) // 窗灯
-    rect(Color(0xFFE8C9A0), 430f, 180f, 720f, 560f)
     rect(if (variant) Color(0xFF6E4A2F) else Color(0xFFF6C453), 480f, 220f, 520f, 280f)
-    // 路灯
-    line(Color(0xFF3E3A35), 600f, 560f, 600f, 300f, 8f)
-    circle(if (variant) Color(0xFFB9B9B9) else Color(0xFFF6C453), 600f, 290f, 26f)
+    circle(if (variant) Color(0xFFB9B9B9) else Color(0xFFF6C453), 600f, 290f, 26f) // 路灯
     if (!variant) circle(Color(0x44F6C453), 600f, 290f, 55f)
-    // 花箱
     if (!variant) {
         rect(Color(0xFF8A5A2B), 780f, 560f, 920f, 620f)
         flower(800f, 540f, Color(0xFFE85D5D))
         flower(850f, 540f, Color(0xFFF2A0C0))
         flower(890f, 540f, Color(0xFFE8A33D))
     }
-    // 汽车
     val car = if (variant) Color(0xFF5E8C5E) else Color(0xFF4A6FA5)
     rect(car, 120f, 640f, 380f, 720f)
     rect(car, 180f, 600f, 320f, 660f)
-    circle(Color(0xFF2E2A25), 180f, 720f, 30f)
-    circle(Color(0xFF2E2A25), 320f, 720f, 30f)
-    // 自行车
     if (!variant) {
         circle(Color(0xFF2E2A25), 500f, 780f, 26f)
         circle(Color(0xFF2E2A25), 560f, 780f, 26f)
         line(Color(0xFF2E2A25), 500f, 780f, 560f, 780f, 5f)
     }
-    // 小猫
     if (!variant) {
         circle(Color(0xFFE8A33D), 800f, 840f, 26f)
         circle(Color(0xFFE8A33D), 830f, 860f, 22f)
     }
 }
 
-val SCENE_STREET = SpotSceneDef(name = "街角", diffs = STREET_DIFFS, draw = { drawStreet(it) })
+val SCENE_STREET = SpotSceneDef(
+    name = "街角", diffs = STREET_DIFFS, draw = { drawStreet(it) }, bgRes = R.drawable.spot_street,
+)
 
 private val NIGHT_DIFFS = listOf(
     SpotDiff(Rect(300f, 60f, 420f, 180f), "月亮颜色"),
@@ -542,18 +498,13 @@ private val NIGHT_DIFFS = listOf(
     SpotDiff(Rect(760f, 100f, 950f, 220f), "云朵"),
 )
 
+/** 夜景：只画差异小元素（月色 / 星星 / 窗灯 / 路灯 / 车灯 / 云 / 猫） */
 private fun DrawScope.drawNight(variant: Boolean) {
-    rect(Color(0xFF1C2740), 0f, 0f, 1000f, 1000f)
-    circle(if (variant) Color(0xFFE8E0C8) else Color(0xFFF6C453), 360f, 120f, 55f)
+    circle(if (variant) Color(0xFFE8E0C8) else Color(0xFFF6C453), 360f, 120f, 55f) // 月亮
     for (i in 0 until 5) {
-        if (!variant || i < 3) circle(Color.White, 90f + i * 70f, 100f + (i % 3) * 40f, 9f)
+        if (!variant || i < 3) circle(Color.White, 90f + i * 70f, 100f + (i % 3) * 40f, 9f) // 星星
     }
     cloud(840f, 150f, 0.8f, if (variant) Color(0xFF4A5A7A) else Color(0xFF6A7A9A))
-    // 楼
-    rect(Color(0xFF2E3A55), 120f, 200f, 380f, 760f)
-    rect(Color(0xFF3E4A6A), 430f, 160f, 720f, 760f)
-    rect(Color(0xFF2E3A55), 760f, 260f, 950f, 760f)
-    // 窗灯
     if (variant) {
         rect(Color(0xFF6E4A2F), 160f, 240f, 200f, 300f)
         rect(Color(0xFF6E4A2F), 240f, 240f, 280f, 300f)
@@ -562,23 +513,18 @@ private fun DrawScope.drawNight(variant: Boolean) {
         rect(Color(0xFFF6C453), 240f, 240f, 280f, 300f)
         rect(Color(0xFFF6C453), 470f, 220f, 510f, 280f)
     }
-    // 路灯
-    line(Color(0xFF3E3A35), 600f, 760f, 600f, 240f, 8f)
-    circle(if (variant) Color(0xFFB9B9B9) else Color(0xFFF6C453), 600f, 230f, 24f)
+    circle(if (variant) Color(0xFFB9B9B9) else Color(0xFFF6C453), 600f, 230f, 24f) // 路灯
     if (!variant) circle(Color(0x44F6C453), 600f, 230f, 55f)
-    // 汽车（带灯）
-    rect(Color(0xFF4A6FA5), 120f, 640f, 380f, 720f)
-    circle(Color(0xFF2E2A25), 180f, 720f, 28f)
-    circle(Color(0xFF2E2A25), 320f, 720f, 28f)
     if (!variant) {
-        circle(Color(0xFFF6C453), 390f, 670f, 10f)
+        circle(Color(0xFFF6C453), 390f, 670f, 10f) // 车灯
         circle(Color(0xFFF6C453), 390f, 690f, 10f)
     }
-    // 猫
     if (!variant) {
         circle(Color(0xFFE8A33D), 800f, 800f, 24f)
         circle(Color(0xFFE8A33D), 828f, 818f, 20f)
     }
 }
 
-val SCENE_NIGHT = SpotSceneDef(name = "夜景", diffs = NIGHT_DIFFS, draw = { drawNight(it) })
+val SCENE_NIGHT = SpotSceneDef(
+    name = "夜景", diffs = NIGHT_DIFFS, draw = { drawNight(it) }, bgRes = R.drawable.spot_night,
+)

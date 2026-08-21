@@ -254,20 +254,22 @@ class DoudizhuGame {
 
     // ---------- AI 策略 ----------
 
-    /** 自由出牌：先走组合牌型（顺子/连对/三带），单张留最后从小到大出；手牌少时尽快走完 */
+    /** 自由出牌：先走组合牌型（顺子/连对/三带），单张留最后从小到大出；手牌少时先出小牌、保留大牌 */
     fun aiLead(p: Int): Combo? {
         val hand = hands[p]
         val combos = findCombos(hand)
         val normal = combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
         if (normal.isEmpty()) return combos.minByOrNull { it.mainRank } // 只剩炸弹/火箭
 
-        // 手牌很少（≤5）：一次尽量多出，尽快走完
+        // 手牌很少（≤5）：能一次走完优先；否则出最小组合（保留大牌做回手）
         if (hand.size <= 5) {
-            return normal.maxByOrNull { it.cards.size * 10 + it.mainRank }
-                ?: normal.minByOrNull { it.mainRank }
+            val finish = normal.firstOrNull { it.cards.size == hand.size }
+            if (finish != null) return finish
+            // 出最小的单张/对子/三张（rank 小优先），避免从大牌打起
+            return normal.minByOrNull { it.mainRank * 10 + it.cards.size }
         }
 
-        // 组合价值评分：长牌型优先（一次消多张），单张最后出
+        // 组合价值评分：长牌型优先（一次消多张），单张最后出（先出小单张）
         fun score(c: Combo): Int = when (c.type) {
             ComboType.STRAIGHT, ComboType.PAIR_STRAIGHT -> 1000 + c.cards.size * 20 - c.mainRank
             ComboType.PLANE, ComboType.PLANE_WING -> 900 + c.cards.size * 20 - c.mainRank
@@ -286,12 +288,13 @@ class DoudizhuGame {
         return best
     }
 
-    /** 跟牌：小牌优先压；单张可从对子拆；保留炸弹时机；困难难度积极拆牌压制 */
+    /** 跟牌：小牌优先压；可拆对子/三张压单张；保留炸弹时机；角色感知（地主必压、农民配合） */
     fun aiFollow(p: Int): Combo? {
         val prev = lastCombo ?: return aiLead(p)
-        // 农民合作：队友出的牌不压（除非队友只剩少数牌）
         val teammate = findTeammate(p)
-        if (teammate == lastPlayer && hands[teammate]!!.size > 4) return null
+        // 农民合作：队友出的牌不压（除非队友只剩 ≤4 张）
+        val prevIsTeammate = teammate == lastPlayer
+        if (prevIsTeammate && hands[teammate]!!.size > 4) return null
         val combos = findCombos(hands[p])
         val normal = combos
             .filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
@@ -299,16 +302,22 @@ class DoudizhuGame {
         // 简单难度：能压也常不出（留牌）
         if (level == DoudizhuLevel.EASY && normal.isNotEmpty() && Random.nextInt(10) < 4) return null
 
-        // 优先用最小的牌压（省大牌）
+        // 用最小的牌压（省大牌）
         if (normal.isNotEmpty()) {
             val best = normal.minByOrNull { it.mainRank * 10 + it.cards.size }
-            // 用 2/王 压小牌视为浪费：手牌多时可选择不出
-            val wasteBig = prev.type == ComboType.SINGLE && best!!.mainRank >= 15 && handSize(p) > 8
+            // 对手快走（剩 ≤4 张）时必须全力压制，不能省牌放跑
+            val enemies = (0..2).filter { it != p && it != teammate }
+            val enemyMin = enemies.minOf { hands[it]!!.size }
+            val mustBlock = enemyMin <= 4
+            // 地主必压农民；农民压地主；只在「对手出小单张且自己只能出 2/王 且牌多且对手没快走」时才省
+            val iAmLandlord = isLandlord(p)
+            val prevBig = prev.mainRank >= 12 // A/2/王 值得压
+            val wasteBig = !prevBig && best!!.mainRank >= 15 && handSize(p) > 8 && !iAmLandlord && !mustBlock
             if (wasteBig && level != DoudizhuLevel.HARD) return null
             return best
         }
 
-        // 拆牌：prev 是单张时，从对子/三张中拆一张压（困难难度积极拆，普通也偶尔拆）
+        // 拆牌：prev 是单张时，从对子/三张中拆一张压（困难积极，普通偶尔）
         if (prev.type == ComboType.SINGLE) {
             val split = findSplitSingle(p, prev)
             if (split != null) {
@@ -317,12 +326,14 @@ class DoudizhuGame {
             }
         }
 
-        // 炸弹：对手快赢或自己快走时动用
-        val oppMin = (0..2).filter { it != p && it != teammate }.minOf { hands[it]!!.size }
+        // 炸弹：对手快赢或自己快走时动用（地主防守更积极）
+        val enemies = (0..2).filter { it != p && it != teammate }
+        val oppMin = enemies.minOf { hands[it]!!.size }
+        val iAmLandlord = isLandlord(p)
         val useBomb = when (level) {
             DoudizhuLevel.EASY -> false
             DoudizhuLevel.NORMAL -> oppMin <= 1 || handSize(p) <= 2
-            DoudizhuLevel.HARD -> oppMin <= 3 || handSize(p) <= 4
+            DoudizhuLevel.HARD -> oppMin <= 3 || handSize(p) <= 4 || (iAmLandlord && oppMin <= 5)
         }
         if (useBomb) {
             val big = combos

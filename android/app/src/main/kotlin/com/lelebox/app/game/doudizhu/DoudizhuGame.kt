@@ -237,7 +237,7 @@ class DoudizhuGame {
         passCount++
         if (passCount >= 2) {
             lastCombo = null // 新一轮自由出牌
-            clearTable()     // 只保留最近一轮：两家都过后清空牌面与"过"，等新的一手
+            // 保留"过"与牌面显示：两家都过后仍显示"过"，直到新一手真正出牌才 clearTable()
             passCount = 0
         }
         current = next(p)

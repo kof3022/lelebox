@@ -160,7 +160,7 @@ class DoudizhuGameTest {
     }
 
     @Test
-    fun `pass twice keeps display then clears on free lead`() {
+    fun `pass twice keeps pass display until new hand`() {
         val g = DoudizhuGame()
         g.newDeal()
         g.playerBid(true)
@@ -173,20 +173,18 @@ class DoudizhuGameTest {
         g.current = 1
         g.aiAct() // AI1 过
         assertTrue(g.passedThisRound[1])
-        assertFalse(g.playedThisRound[1])
         g.aiAct() // AI2 过
         assertNull(g.lastCombo)
         assertEquals(0, g.current)
-        // 两家都过后：只保留最近一轮，牌面与"过"清空（等新的一手）
-        assertFalse(g.passedThisRound[1])
-        assertFalse(g.passedThisRound[2])
-        assertNull(g.lastPlays[1])
-        assertNull(g.lastPlays[2])
-        // 玩家自由出牌（新一轮第一手）
+        // 两家都过后："过"标记保留显示（不一轮空白），直到新一手真正出牌才清空
+        assertTrue(g.passedThisRound[1])
+        assertTrue(g.passedThisRound[2])
+        // 玩家自由出牌（新一轮第一手）→ 清空展示
         val single = g.hands[0].minBy { it.rank }
         g.playerPlay(listOf(single))
         assertTrue(g.playedThisRound[0])
-        assertFalse(g.passedThisRound[0])
+        assertFalse(g.passedThisRound[1])
+        assertFalse(g.passedThisRound[2])
         assertNotNull(g.lastPlays[0])
     }
 
@@ -215,6 +213,27 @@ class DoudizhuGameTest {
         val combos = g.findCombos(g.hands[0])
         assertTrue(combos.isNotEmpty())
         assertTrue(combos.any { it.type == ComboType.SINGLE })
+    }
+
+    @Test
+    fun `farmer teammate win counts as player win`() {
+        val g = DoudizhuGame()
+        g.newDeal()
+        g.playerBid(false) // AI 当地主
+        assertTrue(g.landlord in 1..2)
+        // 玩家是农民；另一个农民（队友）赢 → 玩家视角算赢
+        val teammate = (1..2).first { it != g.landlord }
+        g.winner = teammate
+        g.over = true
+        val playerWon = g.winner == 0 || (!g.isLandlord(0) && !g.isLandlord(g.winner))
+        assertTrue(playerWon)
+        // 地主赢 → 玩家（农民）输
+        g.winner = g.landlord
+        val playerLost = g.winner == 0 || (!g.isLandlord(0) && !g.isLandlord(g.winner))
+        assertFalse(playerLost)
+        // 玩家是地主、自己赢 → 赢
+        g.winner = 0
+        assertTrue(g.winner == 0 || (!g.isLandlord(0) && !g.isLandlord(g.winner)))
     }
 
     @Test

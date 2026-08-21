@@ -55,6 +55,7 @@ val GameGomoku = Color(0xFF6E8B74)         // 鼠尾草灰绿（五子棋）
 val GameLink = Color(0xFFC4623C)           // 陶土（连连看）
 val GameSpot = Color(0xFFE08A3C)           // 暖橙（找不同）
 val GameDoudizhu = Color(0xFFB0453E)       // 暖红（斗地主）
+val GameMahjong = Color(0xFF5E8C5E)        // 麻将绿
 
 // 功能色
 val SuccessSoft = Color(0xFFDCE9E0)

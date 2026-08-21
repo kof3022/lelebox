@@ -166,11 +166,12 @@ private fun SpotBoard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    // scene 作为 key：切关（下一关/选其他关）时整个状态重置，不会残留上一关的过关遮罩
     val game = remember(scene) { SpotGame(scene) }
-    var tick by remember { mutableIntStateOf(0) }
-    var hintIdx by remember { mutableIntStateOf(-1) }
+    var tick by remember(scene) { mutableIntStateOf(0) }
+    var hintIdx by remember(scene) { mutableIntStateOf(-1) }
     // UI 状态：通关后置 true（game.over 是普通字段，不触发重组）
-    var overState by remember { mutableStateOf(false) }
+    var overState by remember(scene) { mutableStateOf(false) }
 
     fun newRound() {
         game.restart()

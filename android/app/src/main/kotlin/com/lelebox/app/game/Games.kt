@@ -35,7 +35,7 @@ object Games {
             id = "doudizhu",
             title = "斗地主",
             subtitle = "和电脑打牌，先出完赢",
-            help = "叫地主后先出完牌就赢。可以出单张、对子、三张、顺子等。点牌选中，再点「出牌」。",
+            help = "叫地主后先出完牌就赢。可以出单张、对子、三张、顺子等。点牌选中，再点「出牌」。如果你不是地主，另一位电脑农民和你是一伙的，你们谁先出完都算你赢。",
             kind = GameKind.NATIVE,
             emoji = "🃏",
             accent = GameDoudizhu,

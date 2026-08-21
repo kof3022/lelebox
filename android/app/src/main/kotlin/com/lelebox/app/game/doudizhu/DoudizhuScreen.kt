@@ -158,7 +158,7 @@ private fun LevelSelect(
             Text("斗地主", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(10.dp))
             Text(
-                "叫地主后先出完牌就赢。\n选个电脑水平吧。",
+                "叫地主后先出完牌就赢。\n不是地主时，另一位电脑和你一伙，谁先出完都算赢。",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -405,7 +405,8 @@ private fun GameTable(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                val win = game.winner == 0
+                // 玩家赢：自己赢，或自己不是地主时农民队友赢（一伙的）
+                val win = game.winner == 0 || (!game.isLandlord(0) && !game.isLandlord(game.winner))
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = if (win) Color(0xFFF0A93C) else Color(0xFFC0392B),
@@ -459,10 +460,10 @@ private fun playerRoleText(game: DoudizhuGame, p: Int): String = when {
 @Composable
 private fun Table(game: DoudizhuGame, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize()) {
-        // 底牌（顶部中间；叫地主后翻开，其余阶段隐藏）
+        // 底牌（桌面中央；与孔子/庄子出牌区错开，避免重叠）
         if (game.phase == 1) {
             Row(
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier.align(Alignment.Center),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 game.bottom.forEach { c -> MiniCard(c, Modifier.size(34.dp, 48.dp)) }

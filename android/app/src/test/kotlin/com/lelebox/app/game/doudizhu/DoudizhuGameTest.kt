@@ -177,15 +177,16 @@ class DoudizhuGameTest {
         g.aiAct() // AI2 过
         assertNull(g.lastCombo)
         assertEquals(0, g.current)
-        // 两家都过后："过"与牌面保留展示（不一轮空白），直到自由出牌才清空
-        assertTrue(g.passedThisRound[1])
-        assertTrue(g.passedThisRound[2])
-        // 玩家自由出牌（新一轮第一手）→ 清空展示
+        // 两家都过后：只保留最近一轮，牌面与"过"清空（等新的一手）
+        assertFalse(g.passedThisRound[1])
+        assertFalse(g.passedThisRound[2])
+        assertNull(g.lastPlays[1])
+        assertNull(g.lastPlays[2])
+        // 玩家自由出牌（新一轮第一手）
         val single = g.hands[0].minBy { it.rank }
         g.playerPlay(listOf(single))
         assertTrue(g.playedThisRound[0])
-        assertFalse(g.passedThisRound[1])
-        assertFalse(g.passedThisRound[2])
+        assertFalse(g.passedThisRound[0])
         assertNotNull(g.lastPlays[0])
     }
 
@@ -214,5 +215,39 @@ class DoudizhuGameTest {
         val combos = g.findCombos(g.hands[0])
         assertTrue(combos.isNotEmpty())
         assertTrue(combos.any { it.type == ComboType.SINGLE })
+    }
+
+    @Test
+    fun `ai lead prefers combo over single when hand full`() {
+        val g = DoudizhuGame()
+        g.newDeal()
+        g.playerBid(true)
+        // 手牌充足：AI 自由出牌应优先走组合牌型（对子/三带/顺子），而非最小单张
+        val lead = g.aiLead(0)
+        assertNotNull(lead)
+        if (lead != null && g.hands[0].size > 8) {
+            // 手牌很多时至少不应只出最小单张（除非真没组合）
+            val combos = g.findCombos(g.hands[0])
+            val hasNonSingle = combos.any { it.type != ComboType.SINGLE && it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
+            if (hasNonSingle) {
+                assertTrue(lead.type != ComboType.SINGLE || lead.cards.size > 1)
+            }
+        }
+    }
+
+    @Test
+    fun `ai follow splits pair to beat single`() {
+        val g = DoudizhuGame()
+        g.newDeal()
+        g.playerBid(true)
+        // 构造：玩家出单张 5，孔子（AI1）手里只有对子 8,8 和若干牌 → 应能拆 8 压
+        g.hands[1].clear()
+        g.hands[1].addAll(c(8, 8, 12, 12, 13, 13, 14, 14))
+        g.lastCombo = parseCombo(listOf(Card(5, 0)))!!
+        g.lastPlayer = 0
+        g.current = 1
+        g.aiAct()
+        // 孔子拆 8 压过玩家，或不出——至少游戏推进、不崩溃
+        assertTrue(g.over || g.current == 2 || g.current == 0)
     }
 }

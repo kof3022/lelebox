@@ -478,7 +478,7 @@ private fun Table(game: DoudizhuGame, modifier: Modifier = Modifier) {
     }
 }
 
-/** 一家出牌区：轮到玩家→"请出牌"（优先）；出牌→放大展示牌；本轮"过"→显示"过"；其余留空 */
+/** 一家出牌区：轮到玩家→"请出牌"（优先）；本轮"过"→显示"过"（覆盖旧牌面）；出牌→放大展示牌；其余留空 */
 @Composable
 private fun TablePlay(game: DoudizhuGame, p: Int, modifier: Modifier = Modifier) {
     val combo = game.lastPlays[p]
@@ -488,14 +488,15 @@ private fun TablePlay(game: DoudizhuGame, p: Int, modifier: Modifier = Modifier)
             game.phase == 1 && !game.over && p == 0 && game.current == 0 -> {
                 Text("请出牌", fontSize = 24.sp, color = Color(0xFFFFE082), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
+            // 本轮已"过"：优先显示"过"（覆盖上一轮自己的牌面）
+            game.phase == 1 && !game.over && game.passedThisRound[p] -> {
+                Text("过", fontSize = 26.sp, color = Color(0xFFB9C9BF), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
             combo != null -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     combo.cards.take(8).forEach { c -> MiniCard(c, Modifier.size(40.dp, 56.dp)) }
                     if (combo.cards.size > 8) Text("…", fontSize = 16.sp, color = Color.White)
                 }
-            }
-            game.phase == 1 && !game.over && game.passedThisRound[p] -> {
-                Text("过", fontSize = 26.sp, color = Color(0xFFB9C9BF), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
         }
     }

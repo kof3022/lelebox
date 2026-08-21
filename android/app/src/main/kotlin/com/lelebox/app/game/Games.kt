@@ -6,6 +6,7 @@ import com.lelebox.app.ui.Game2048
 import com.lelebox.app.ui.GameDoudizhu
 import com.lelebox.app.ui.GameGomoku
 import com.lelebox.app.ui.GameLink
+import com.lelebox.app.ui.GameMahjong
 import com.lelebox.app.ui.GameMemory
 import com.lelebox.app.ui.GameSpot
 import com.lelebox.app.ui.GameSudoku
@@ -100,6 +101,15 @@ object Games {
             emoji = "🎴",
             accent = GameMemory,
             iconRes = R.drawable.ic_game_memory,
+        ),
+        GameEntry(
+            id = "mahjong",
+            title = "麻将",
+            subtitle = "凑齐四副加一对就胡",
+            help = "你和三位电脑打国标麻将。摸牌、打牌，凑成四副顺子或刻子加一对将就胡牌。可以吃、碰、杠。胡牌后看看赢多少番。",
+            kind = GameKind.NATIVE,
+            emoji = "🀄",
+            accent = GameMahjong,
         ),
     )
 

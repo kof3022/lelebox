@@ -40,6 +40,7 @@ import com.lelebox.app.game.g2048.Game2048Screen
 import com.lelebox.app.game.doudizhu.DoudizhuScreen
 import com.lelebox.app.game.gomoku.GomokuScreen
 import com.lelebox.app.game.link.LinkGameScreen
+import com.lelebox.app.game.mahjong.MahjongScreen
 import com.lelebox.app.game.spot.SpotGameScreen
 import com.lelebox.app.game.sudoku.SudokuScreen
 import com.lelebox.app.ui.ElderButton
@@ -130,6 +131,11 @@ class GameShellActivity : ComponentActivity() {
                             )
                             "sudoku" -> SudokuScreen(
                                 prefs = prefs,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            "mahjong" -> MahjongScreen(
+                                onBack = { finish() },
+                                onHelp = { showHelp = true },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             else -> NativePlaceholder(game)

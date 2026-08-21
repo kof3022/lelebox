@@ -74,6 +74,7 @@ fun SpotGameScreen(
             onNext = {
                 if (stage + 1 < lv.scenes.size) stage++ else { stage = -1; difficulty = null }
             },
+            onPickStage = { stage = it },
             onBackToLevels = { difficulty = null; stage = -1 },
             modifier = modifier,
         )
@@ -160,6 +161,7 @@ private fun SpotBoard(
     level: SpotLevel,
     scene: SpotSceneDef,
     onNext: () -> Unit,
+    onPickStage: (Int) -> Unit,
     onBackToLevels: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -167,16 +169,20 @@ private fun SpotBoard(
     val game = remember(scene) { SpotGame(scene) }
     var tick by remember { mutableIntStateOf(0) }
     var hintIdx by remember { mutableIntStateOf(-1) }
+    // UI 状态：通关后置 true（game.over 是普通字段，不触发重组）
+    var overState by remember { mutableStateOf(false) }
 
     fun newRound() {
         game.restart()
         hintIdx = -1
+        overState = false
         tick++
     }
 
     fun onTap(nx: Float, ny: Float) {
         if (game.over) return
         if (game.checkTap(nx, ny)) Sfx.success(context) else Sfx.fail(context)
+        if (game.over) overState = true
         tick++
     }
 
@@ -195,8 +201,9 @@ private fun SpotBoard(
         if (game.over) Sfx.success(context)
     }
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -253,11 +260,17 @@ private fun SpotBoard(
         }
     }
 
-    if (game.over) {
-        Column(
+    // 遮罩包进 key(tick)：tick 变化强制重估（found.size/over 是普通字段）
+    key("overlay") { if (overState || game.over || game.found.size >= game.diffs.size) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -266,18 +279,54 @@ private fun SpotBoard(
             Spacer(Modifier.height(12.dp))
             Text("全找到了！你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
             Spacer(Modifier.height(10.dp))
+            // 星级互动：点错越少星越多
+            val stars = if (game.misses == 0) 3 else if (game.misses <= 2) 2 else 1
             Text(
-                if (game.misses > 0) "点错了 ${game.misses} 次也没关系，慢慢来" else "一次都没点错！",
+                "⭐".repeat(stars) + "☆".repeat(3 - stars),
+                fontSize = 40.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when (stars) {
+                    3 -> "完美通关！一次都没点错！"
+                    2 -> "真棒！只点错了 ${game.misses} 次"
+                    else -> "找到啦！点错 ${game.misses} 次也没关系，慢慢来"
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFFFFE0B2),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(32.dp))
-            ElderButton(text = "下一关", onClick = onNext, modifier = Modifier.fillMaxWidth())
+            // 下一关（还有的话）
+            if (scene != level.scenes.last()) {
+                ElderButton(text = "下一关 ▶", onClick = onNext, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(12.dp))
+            }
+            // 选其他关（回到本难度选关页，可自由进任意关）
+            ElderButton(
+                text = "选其他关",
+                onClick = { onPickStage(-1) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White,
+                ),
+            )
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "重玩本关", onClick = ::newRound, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
-            ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
+            ElderButton(
+                text = "换难度",
+                onClick = onBackToLevels,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            )
+        }
+        }
+        }
         }
     }
 }

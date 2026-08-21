@@ -1,4 +1,4 @@
-﻿package com.lelebox.app.game.spot
+package com.lelebox.app.game.spot
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -206,11 +206,11 @@ private fun DrawScope.appleCluster(tx: Float, ty: Float, color: Color = Color(0x
 // ============ 简单（5 处） ============
 
 private val GARDEN_DIFFS = listOf(
-    SpotDiff(Rect(430f, 90f, 620f, 330f), "太阳的光芒"),
-    SpotDiff(Rect(120f, 120f, 330f, 250f), "一朵云"),
-    SpotDiff(Rect(150f, 760f, 290f, 900f), "左花颜色"),
-    SpotDiff(Rect(760f, 140f, 900f, 260f), "一只小鸟"),
-    SpotDiff(Rect(500f, 470f, 760f, 760f), "树上的苹果"),
+    SpotDiff(Rect(470f, 110f, 650f, 290f), "太阳的光芒"),
+    SpotDiff(Rect(130f, 140f, 310f, 220f), "一朵云"),
+    SpotDiff(Rect(190f, 760f, 250f, 830f), "左花颜色"),
+    SpotDiff(Rect(790f, 165f, 870f, 235f), "一只小鸟"),
+    SpotDiff(Rect(540f, 420f, 700f, 500f), "树上的苹果"),
 )
 
 /** 花园：只画差异小元素（太阳光芒数 / 云 / 左花颜色 / 小鸟 / 苹果），底图为即梦空景 */
@@ -228,10 +228,10 @@ val SCENE_GARDEN = SpotSceneDef(
 
 private val LIVING_DIFFS = listOf(
     SpotDiff(Rect(700f, 200f, 940f, 420f), "电视画面"),
-    SpotDiff(Rect(100f, 330f, 330f, 620f), "台灯灯光"),
-    SpotDiff(Rect(380f, 700f, 600f, 900f), "沙发上的猫"),
-    SpotDiff(Rect(130f, 620f, 360f, 900f), "窗台的花"),
-    SpotDiff(Rect(470f, 430f, 760f, 700f), "沙发靠垫颜色"),
+    SpotDiff(Rect(150f, 500f, 250f, 660f), "台灯灯光"),
+    SpotDiff(Rect(480f, 730f, 580f, 830f), "沙发上的猫"),
+    SpotDiff(Rect(230f, 800f, 300f, 870f), "窗台的花"),
+    SpotDiff(Rect(490f, 440f, 760f, 610f), "沙发靠垫颜色"),
 )
 
 /** 客厅：只画差异小元素（电视画面色 / 台灯光晕 / 窗台花 / 靠垫色 / 猫） */
@@ -254,9 +254,9 @@ val SCENE_LIVING = SpotSceneDef(
 )
 
 private val ORCHARD_DIFFS = listOf(
-    SpotDiff(Rect(430f, 80f, 600f, 300f), "太阳颜色"),
-    SpotDiff(Rect(200f, 420f, 430f, 610f), "苹果颜色"),
-    SpotDiff(Rect(720f, 560f, 940f, 740f), "果篮的苹果"),
+    SpotDiff(Rect(430f, 110f, 570f, 250f), "太阳颜色"),
+    SpotDiff(Rect(200f, 420f, 360f, 520f), "苹果颜色"),
+    SpotDiff(Rect(760f, 560f, 900f, 640f), "果篮的苹果"),
     SpotDiff(Rect(820f, 120f, 950f, 240f), "树梢的小鸟"),
     SpotDiff(Rect(100f, 820f, 400f, 960f), "草丛小花颜色"),
 )
@@ -289,12 +289,12 @@ val SCENE_ORCHARD = SpotSceneDef(
 // ============ 中等（6 处） ============
 
 private val PARK_DIFFS = listOf(
-    SpotDiff(Rect(430f, 60f, 700f, 300f), "天上的风筝"),
-    SpotDiff(Rect(160f, 720f, 430f, 890f), "长椅颜色"),
+    SpotDiff(Rect(500f, 220f, 660f, 340f), "天上的风筝"),
+    SpotDiff(Rect(160f, 730f, 400f, 830f), "长椅颜色"),
     SpotDiff(Rect(520f, 600f, 720f, 780f), "池塘的鸭子"),
     SpotDiff(Rect(730f, 660f, 920f, 820f), "气球"),
-    SpotDiff(Rect(180f, 380f, 480f, 560f), "喷泉的水"),
-    SpotDiff(Rect(30f, 500f, 155f, 900f), "栅栏的柱子"),
+    SpotDiff(Rect(280f, 360f, 360f, 440f), "喷泉的水"),
+    SpotDiff(Rect(30f, 500f, 150f, 900f), "栅栏的柱子"),
 )
 
 /** 公园：只画差异小元素（风筝 / 长椅色 / 鸭子 / 气球 / 喷泉水 / 栅栏柱） */
@@ -331,15 +331,15 @@ val SCENE_PARK = SpotSceneDef(
 private val SEASIDE_DIFFS = listOf(
     SpotDiff(Rect(430f, 70f, 630f, 280f), "太阳"),
     SpotDiff(Rect(150f, 560f, 420f, 810f), "小木船"),
-    SpotDiff(Rect(700f, 380f, 930f, 620f), "遮阳伞颜色"),
+    SpotDiff(Rect(700f, 430f, 880f, 610f), "遮阳伞颜色"),
     SpotDiff(Rect(110f, 840f, 300f, 960f), "海星"),
     SpotDiff(Rect(760f, 120f, 950f, 260f), "海鸥"),
     SpotDiff(Rect(560f, 740f, 800f, 880f), "浪花"),
 )
 
-/** 海边：只画差异小元素（太阳 / 小船 / 伞色 / 海星 / 海鸥 / 浪花） */
+/** 海边：只画差异小元素（太阳有无 / 小船 / 伞色 / 海星 / 海鸥 / 浪花） */
 private fun DrawScope.drawSeaside(variant: Boolean) {
-    sun(520f, 170f, 75f, Color(0xFFF6C453), 8)
+    if (!variant) sun(520f, 170f, 75f, Color(0xFFF6C453), 8) // 太阳仅原图有
     if (!variant) {
         rect(Color(0xFF8A5A2B), 190f, 740f, 360f, 800f)
         line(Color(0xFF5A3A22), 260f, 740f, 260f, 660f, 6f)
@@ -372,11 +372,11 @@ val SCENE_SEASIDE = SpotSceneDef(
 )
 
 private val FARM_DIFFS = listOf(
-    SpotDiff(Rect(680f, 520f, 900f, 820f), "拖拉机"),
-    SpotDiff(Rect(200f, 300f, 430f, 620f), "稻草人帽子颜色"),
+    SpotDiff(Rect(690f, 690f, 870f, 800f), "拖拉机"),
+    SpotDiff(Rect(220f, 345f, 330f, 455f), "稻草人帽子颜色"),
     SpotDiff(Rect(500f, 700f, 680f, 900f), "奶牛"),
     SpotDiff(Rect(100f, 780f, 500f, 950f), "庄稼行数"),
-    SpotDiff(Rect(430f, 300f, 620f, 560f), "谷仓门"),
+    SpotDiff(Rect(490f, 390f, 560f, 570f), "谷仓门"),
     SpotDiff(Rect(800f, 100f, 950f, 220f), "云朵"),
 )
 
@@ -409,12 +409,12 @@ val SCENE_FARM = SpotSceneDef(
 // ============ 困难（7 处） ============
 
 private val SNOW_DIFFS = listOf(
-    SpotDiff(Rect(180f, 640f, 480f, 900f), "雪人"),
+    SpotDiff(Rect(240f, 590f, 420f, 820f), "雪人"),
     SpotDiff(Rect(430f, 290f, 700f, 380f), "屋顶积雪"),
-    SpotDiff(Rect(720f, 680f, 900f, 880f), "雪橇"),
+    SpotDiff(Rect(720f, 790f, 900f, 855f), "雪橇"),
     SpotDiff(Rect(60f, 80f, 260f, 220f), "星星"),
-    SpotDiff(Rect(600f, 120f, 700f, 280f), "烟囱冒烟"),
-    SpotDiff(Rect(720f, 430f, 950f, 660f), "树上的雪"),
+    SpotDiff(Rect(630f, 150f, 710f, 270f), "烟囱冒烟"),
+    SpotDiff(Rect(790f, 350f, 890f, 450f), "树上的雪"),
     SpotDiff(Rect(300f, 80f, 420f, 200f), "月亮颜色"),
 )
 
@@ -448,11 +448,11 @@ val SCENE_SNOW = SpotSceneDef(
 )
 
 private val STREET_DIFFS = listOf(
-    SpotDiff(Rect(80f, 560f, 400f, 860f), "汽车颜色"),
-    SpotDiff(Rect(500f, 260f, 700f, 600f), "路灯"),
-    SpotDiff(Rect(760f, 500f, 930f, 700f), "花箱"),
-    SpotDiff(Rect(140f, 200f, 340f, 460f), "窗户亮灯"),
-    SpotDiff(Rect(400f, 700f, 640f, 900f), "自行车"),
+    SpotDiff(Rect(110f, 590f, 390f, 730f), "汽车颜色"),
+    SpotDiff(Rect(560f, 250f, 640f, 330f), "路灯"),
+    SpotDiff(Rect(770f, 530f, 930f, 630f), "花箱"),
+    SpotDiff(Rect(130f, 230f, 190f, 310f), "窗户亮灯"),
+    SpotDiff(Rect(470f, 750f, 590f, 810f), "自行车"),
     SpotDiff(Rect(700f, 760f, 900f, 920f), "小猫"),
     SpotDiff(Rect(100f, 100f, 300f, 200f), "云朵"),
 )
@@ -490,10 +490,10 @@ val SCENE_STREET = SpotSceneDef(
 
 private val NIGHT_DIFFS = listOf(
     SpotDiff(Rect(300f, 60f, 420f, 180f), "月亮颜色"),
-    SpotDiff(Rect(60f, 80f, 260f, 200f), "星星"),
-    SpotDiff(Rect(150f, 200f, 340f, 460f), "窗户亮灯"),
-    SpotDiff(Rect(500f, 220f, 700f, 560f), "路灯"),
-    SpotDiff(Rect(100f, 620f, 380f, 760f), "汽车灯光"),
+    SpotDiff(Rect(60f, 80f, 290f, 200f), "星星"),
+    SpotDiff(Rect(150f, 230f, 290f, 310f), "窗户亮灯"),
+    SpotDiff(Rect(560f, 190f, 640f, 270f), "路灯"),
+    SpotDiff(Rect(370f, 650f, 410f, 710f), "汽车灯光"),
     SpotDiff(Rect(700f, 700f, 900f, 880f), "猫咪"),
     SpotDiff(Rect(760f, 100f, 950f, 220f), "云朵"),
 )
@@ -501,8 +501,8 @@ private val NIGHT_DIFFS = listOf(
 /** 夜景：只画差异小元素（月色 / 星星 / 窗灯 / 路灯 / 车灯 / 云 / 猫） */
 private fun DrawScope.drawNight(variant: Boolean) {
     circle(if (variant) Color(0xFFE8E0C8) else Color(0xFFF6C453), 360f, 120f, 55f) // 月亮
-    for (i in 0 until 5) {
-        if (!variant || i < 3) circle(Color.White, 90f + i * 70f, 100f + (i % 3) * 40f, 9f) // 星星
+    for (i in 0 until 4) {
+        if (!variant || i < 2) circle(Color.White, 100f + i * 60f, 100f + (i % 3) * 40f, 9f) // 星星
     }
     cloud(840f, 150f, 0.8f, if (variant) Color(0xFF4A5A7A) else Color(0xFF6A7A9A))
     if (variant) {

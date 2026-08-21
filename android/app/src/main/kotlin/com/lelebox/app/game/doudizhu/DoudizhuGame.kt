@@ -236,7 +236,8 @@ class DoudizhuGame {
         passedThisRound[p] = true
         passCount++
         if (passCount >= 2) {
-            lastCombo = null // 新一轮自由出牌；"过"与牌面保留展示，直到有人自由出牌才清空
+            lastCombo = null // 新一轮自由出牌
+            clearTable()     // 只保留最近一轮：两家都过后清空牌面与"过"，等新的一手
             passCount = 0
         }
         current = next(p)
@@ -253,21 +254,40 @@ class DoudizhuGame {
 
     // ---------- AI 策略 ----------
 
-    private fun aiLead(p: Int): Combo? {
-        val combos = findCombos(hands[p])
-        val normal = combos
-            .filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
-            .minByOrNull { it.mainRank * 10 + it.cards.size }
-        if (level == DoudizhuLevel.EASY) {
-            // 简单：在较优候选中随机
-            val pool = combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }.take(4)
+    /** 自由出牌：先走组合牌型（顺子/连对/三带），单张留最后从小到大出；手牌少时尽快走完 */
+    fun aiLead(p: Int): Combo? {
+        val hand = hands[p]
+        val combos = findCombos(hand)
+        val normal = combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
+        if (normal.isEmpty()) return combos.minByOrNull { it.mainRank } // 只剩炸弹/火箭
+
+        // 手牌很少（≤5）：一次尽量多出，尽快走完
+        if (hand.size <= 5) {
+            return normal.maxByOrNull { it.cards.size * 10 + it.mainRank }
+                ?: normal.minByOrNull { it.mainRank }
+        }
+
+        // 组合价值评分：长牌型优先（一次消多张），单张最后出
+        fun score(c: Combo): Int = when (c.type) {
+            ComboType.STRAIGHT, ComboType.PAIR_STRAIGHT -> 1000 + c.cards.size * 20 - c.mainRank
+            ComboType.PLANE, ComboType.PLANE_WING -> 900 + c.cards.size * 20 - c.mainRank
+            ComboType.TRIPLE_TWO -> 800 - c.mainRank
+            ComboType.TRIPLE_ONE -> 780 - c.mainRank
+            ComboType.TRIPLE -> 750 - c.mainRank
+            ComboType.PAIR -> 600 - c.mainRank * 2
+            else -> 400 - c.mainRank * 3 // SINGLE：最后出，先出小单张
+        }
+        val best = normal.maxByOrNull { score(it) } ?: return null
+        // 简单难度：有时不按最优（留点随机，但别太乱）
+        if (level == DoudizhuLevel.EASY && Random.nextInt(10) < 3) {
+            val pool = normal.sortedByDescending { score(it) }.take(3)
             if (pool.isNotEmpty()) return pool[Random.nextInt(pool.size)]
         }
-        if (normal != null) return normal
-        return combos.minByOrNull { it.mainRank }
+        return best
     }
 
-    private fun aiFollow(p: Int): Combo? {
+    /** 跟牌：小牌优先压；单张可从对子拆；保留炸弹时机；困难难度积极拆牌压制 */
+    fun aiFollow(p: Int): Combo? {
         val prev = lastCombo ?: return aiLead(p)
         // 农民合作：队友出的牌不压（除非队友只剩少数牌）
         val teammate = findTeammate(p)
@@ -276,20 +296,54 @@ class DoudizhuGame {
         val normal = combos
             .filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
             .filter { canBeat(prev, it) }
-            .minByOrNull { it.mainRank }
         // 简单难度：能压也常不出（留牌）
-        if (level == DoudizhuLevel.EASY && normal != null && Random.nextInt(10) < 4) return null
-        if (normal != null) return normal
-        // 困难难度：对手快赢（手牌≤2）才动用炸弹
-        if (level == DoudizhuLevel.HARD) {
-            val threat = (0..2).firstOrNull { it != p && it != teammate && hands[it]!!.size <= 2 }
-            if (threat == null) return null
+        if (level == DoudizhuLevel.EASY && normal.isNotEmpty() && Random.nextInt(10) < 4) return null
+
+        // 优先用最小的牌压（省大牌）
+        if (normal.isNotEmpty()) {
+            val best = normal.minByOrNull { it.mainRank * 10 + it.cards.size }
+            // 用 2/王 压小牌视为浪费：手牌多时可选择不出
+            val wasteBig = prev.type == ComboType.SINGLE && best!!.mainRank >= 15 && handSize(p) > 8
+            if (wasteBig && level != DoudizhuLevel.HARD) return null
+            return best
         }
-        val big = combos
-            .filter { it.type == ComboType.BOMB || it.type == ComboType.ROCKET }
-            .filter { canBeat(prev, it) }
-            .minByOrNull { it.mainRank }
-        return big
+
+        // 拆牌：prev 是单张时，从对子/三张中拆一张压（困难难度积极拆，普通也偶尔拆）
+        if (prev.type == ComboType.SINGLE) {
+            val split = findSplitSingle(p, prev)
+            if (split != null) {
+                if (level == DoudizhuLevel.HARD) return split
+                if (level == DoudizhuLevel.NORMAL && Random.nextInt(10) < 6) return split
+            }
+        }
+
+        // 炸弹：对手快赢或自己快走时动用
+        val oppMin = (0..2).filter { it != p && it != teammate }.minOf { hands[it]!!.size }
+        val useBomb = when (level) {
+            DoudizhuLevel.EASY -> false
+            DoudizhuLevel.NORMAL -> oppMin <= 1 || handSize(p) <= 2
+            DoudizhuLevel.HARD -> oppMin <= 3 || handSize(p) <= 4
+        }
+        if (useBomb) {
+            val big = combos
+                .filter { it.type == ComboType.BOMB || it.type == ComboType.ROCKET }
+                .filter { canBeat(prev, it) }
+                .minByOrNull { it.mainRank }
+            if (big != null) return big
+        }
+        return null
+    }
+
+    private fun handSize(p: Int) = hands[p].size
+
+    /** 拆牌：从对子/三张中拆一张压单张（拆小的、保留大的） */
+    private fun findSplitSingle(p: Int, prev: Combo): Combo? {
+        val byRank = hands[p].groupBy { it.rank }
+        val groups = byRank.entries
+            .filter { it.value.size >= 2 && it.key > prev.mainRank && it.key < 15 }
+            .sortedBy { it.key }
+        val g = groups.firstOrNull() ?: return null
+        return Combo(ComboType.SINGLE, g.key, 1, listOf(g.value[0]))
     }
 
     private fun findTeammate(p: Int): Int {

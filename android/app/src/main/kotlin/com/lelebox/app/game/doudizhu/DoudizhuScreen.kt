@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -204,16 +205,8 @@ private fun GameTable(
         while (game.phase == 1 && !game.over && (game.current != 0 || autoPlay)) {
             delay(700)
             if (game.current == 0 && autoPlay) {
-                // 托管：AI 代玩家出牌
-                val combos = game.findCombos(game.hands[0])
-                val prev = game.lastCombo
-                val target = if (prev == null) {
-                    combos.filter { it.type != ComboType.BOMB && it.type != ComboType.ROCKET }
-                        .minByOrNull { it.mainRank * 10 + it.cards.size }
-                        ?: combos.minByOrNull { it.mainRank }
-                } else {
-                    combos.filter { canBeat(prev, it) }.minByOrNull { it.mainRank }
-                }
+                // 托管：复用 AI 策略（aiLead/aiFollow），与电脑同级智慧
+                val target = if (game.lastCombo == null) game.aiLead(0) else game.aiFollow(0)
                 if (target != null) game.playerPlay(target.cards) else game.playerPass()
                 selected = emptySet()
             } else {
@@ -253,7 +246,7 @@ private fun GameTable(
         refresh()
     }
 
-    // 全屏牌桌：深绿绒布渐变铺满整屏 + 金色包边（即梦牌桌背景图后补替换此背景）
+    // 全屏牌桌：即梦牌桌背景图铺满 + 半透明深绿叠层保证文字可读 + 金色包边
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -265,6 +258,21 @@ private fun GameTable(
             .border(3.dp, Color(0xFFC9A24B), RoundedCornerShape(20.dp))
             .padding(8.dp),
     ) {
+    // 牌桌背景图（table_felt.png，即梦生成），contentScale 铺满
+    Image(
+        painter = painterResource(R.drawable.table_felt),
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(17.dp)),
+        contentScale = ContentScale.Crop,
+    )
+    // 半透明深绿叠层：保证牌面/文字在图片上仍清晰
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0x59000000)),
+    )
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -514,16 +522,15 @@ private fun OpponentPanel(
         ) {
             // 头像 + 身份徽章同一行（节省纵向空间）
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                // 头像占位（即梦头像后替换）
-                Box(
+                // 即梦头像：孔子 / 庄子（圆形裁切）
+                Image(
+                    painter = painterResource(if (name == "孔子") R.drawable.confucius else R.drawable.zhuangzi),
+                    contentDescription = name,
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFD8CFC2)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(if (name == "孔子") "🧓" else "👨‍🦳", fontSize = 20.sp)
-                }
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
                 // 身份徽章
                 Surface(
                     shape = RoundedCornerShape(6.dp),

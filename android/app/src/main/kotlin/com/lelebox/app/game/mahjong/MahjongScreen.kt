@@ -6,7 +6,6 @@ import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,7 +41,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -54,7 +51,7 @@ import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import kotlinx.coroutines.delay
 
-/** Mahjong: landscape fullscreen 4-player table. Clean minimal UI. */
+/** Mahjong: landscape fullscreen 4-player table. v0.5.4: auto-draw, Three Kingdoms seats. */
 @Composable
 fun MahjongScreen(
     onBack: () -> Unit = {},
@@ -89,24 +86,21 @@ fun MahjongScreen(
 
     fun refresh() { tick++ }
 
+    /** AI seat display names (Three Kingdoms): 1=孙权(right), 2=曹操(top), 3=刘备(left) */
+    fun seatName(p: Int): String = when (p) { 1 -> "孙权"; 2 -> "曹操"; 3 -> "刘备"; else -> "你" }
+
     fun checkActions() {
         val d = game.lastDiscard
-        canPungNow = d != null && game.canPung(0)
-        canKongNow = d != null && game.canKong(0)
-        canWinNow = d != null && Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty()
+        val canAct = d != null && !game.hasDrawn
+        canPungNow = canAct && game.canPung(0)
+        canKongNow = canAct && game.canKong(0)
+        canWinNow = canAct && Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty()
     }
 
     fun onDiscard(t: Tile) {
         if (!game.hasDrawn || game.winner >= 0) return
         game.discard(0, t)
         Sfx.click(context)
-        refresh()
-    }
-
-    fun onDraw() {
-        if (game.hasDrawn || game.winner >= 0 || game.exhausted) return
-        game.draw(0)
-        if (game.canWin(0)) Sfx.success(context)
         refresh()
     }
 
@@ -117,11 +111,13 @@ fun MahjongScreen(
     fun onPung() { if (game.doPung(0)) { Sfx.click(context); refresh() } }
     fun onKong() { if (game.doKong(0)) { Sfx.click(context); refresh() } }
     fun onConcealedKong() { if (game.canConcealedKong(0) && game.doConcealedKong(0)) { Sfx.click(context); refresh() } }
+
     fun onWinByDiscard() {
         val d = game.lastDiscard ?: return
         if (game.winByDiscard(0, d)) { Sfx.success(context); showFanDialog = true; refresh() }
     }
 
+    // AI turn loop (seat 1..3 play while it is not the player's turn)
     LaunchedEffect(tick) {
         while (game.winner < 0 && !game.exhausted && game.current != 0) {
             delay(600)
@@ -129,34 +125,39 @@ fun MahjongScreen(
             refresh()
         }
     }
+
+    // Auto draw for the player (no draw button). Short grace period when the player
+    // could pung/kong/win on the last discard, so they can tap an action first.
+    LaunchedEffect(tick) {
+        if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
+            val d = game.lastDiscard
+            val pending = d != null && (game.canPung(0) || game.canKong(0) ||
+                Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty())
+            delay(if (pending) 1600 else 300)
+            if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
+                game.draw(0)
+                if (game.canWin(0)) Sfx.success(context)
+                refresh()
+            }
+        }
+    }
+
     LaunchedEffect(tick) { if (game.winner >= 0) showFanDialog = true }
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF2C4A3B))) {
         Column(modifier = Modifier.fillMaxSize().padding(4.dp)) {
-            // Minimal top: only tiny back button (no help, no extra)
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                ElderButton(text = "←", onClick = onBack, minHeight = 36.dp, modifier = Modifier.width(48.dp))
-                Spacer(Modifier.weight(1f))
-                Text(
-                    when {
-                        game.winner >= 0 -> "和牌！"
-                        game.exhausted -> "流局"
-                        game.current == 0 -> "轮到你"
-                        else -> "电脑摸打中…"
-                    },
-                    fontSize = 14.sp,
-                    color = Color(0xFFE8F0E4),
-                )
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.width(48.dp))
-            }
-            Spacer(Modifier.height(2.dp))
-
             // Table area: key(tick) forces full recomposition on every state change
             // (discard rows are built from mutable lists that Compose otherwise skips)
             key(tick) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // ---- Center: tile mountain (un-drawn wall) + dice ----
+                // Back button (top-left, floats over the table)
+                ElderButton(
+                    text = "←",
+                    onClick = onBack,
+                    minHeight = 36.dp,
+                    modifier = Modifier.width(48.dp).align(Alignment.TopStart),
+                )
+                // ---- Center: dice + two-layer wall + last discard + player discards ----
                 Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     // Dice
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -164,10 +165,14 @@ fun MahjongScreen(
                         DieFace(game.dice2)
                     }
                     Spacer(Modifier.height(2.dp))
-                    // Tile mountain: two rows of tile backs (remaining wall)
+                    // Two-layer tile wall (schematic) + remaining count
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(verticalArrangement = Arrangement.spacedBy((-5).dp)) {
-                            repeat(4) { TileBack(Modifier.size(22.dp, 30.dp)) }
+                        Column(verticalArrangement = Arrangement.spacedBy((-6).dp)) {
+                            repeat(2) { TileBack(Modifier.size(20.dp, 26.dp)) }
+                        }
+                        Spacer(Modifier.width(3.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy((-6).dp)) {
+                            repeat(2) { TileBack(Modifier.size(20.dp, 26.dp)) }
                         }
                         Spacer(Modifier.width(6.dp))
                         Text("${game.walls.sumOf { it.size }}", fontSize = 14.sp, color = Color(0xFFFFE082))
@@ -175,73 +180,84 @@ fun MahjongScreen(
                     Spacer(Modifier.height(4.dp))
                     if (game.lastDiscard != null) {
                         TileFace(game.lastDiscard!!, Modifier.size(44.dp, 62.dp))
-                    } else if (game.hasDrawn) {
-                        Text("请打出一张牌", fontSize = 15.sp, color = Color(0xFFFFE082))
                     }
                     // Player's own discard history, under the last-discard display
                     OpponentDiscardRow(game.discards[0])
+                    // Small status line (no "your turn" prompt; auto-draw happens instantly)
+                    when {
+                        game.winner >= 0 -> {}
+                        game.exhausted -> {
+                            Text("流局", fontSize = 14.sp, color = Color(0xFFFFE082))
+                            Spacer(Modifier.height(4.dp))
+                            ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 36.dp)
+                        }
+                        game.current != 0 -> Text("电脑摸打中…", fontSize = 12.sp, color = Color(0xFFC9D6C8))
+                        else -> {}
+                    }
                 }
-                // ---- Top seat 2: discards + hand back ----
+                // ---- Top seat 2 (曹操): name+count above, hand backs, discards below ----
                 Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
-                    OpponentDiscardRow(game.discards[2])
+                    Text("曹操 ${game.hands[2].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(minOf(game.hands[2].size, 12)) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    Text("电脑2", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                    OpponentDiscardRow(game.discards[2])
                 }
-                // ---- Left seat 3: discards + vertical hand ----
+                // ---- Left seat 3 (刘备): name+count above, vertical hand, discards below ----
                 Column(modifier = Modifier.align(Alignment.CenterStart), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("电脑3", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                    Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(minOf(game.hands[3].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
                     }
                     OpponentDiscardRow(game.discards[3])
                 }
-                // ---- Right seat 1: discards + vertical hand ----
+                // ---- Right seat 1 (孙权): name+count above, vertical hand, discards below ----
                 Column(modifier = Modifier.align(Alignment.CenterEnd), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("电脑1", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                    Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(minOf(game.hands[1].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
                     }
                     OpponentDiscardRow(game.discards[1])
                 }
-                // ---- Player discards now live inside the center column (above) ----
             }
             } // key(tick)
 
-            // Action buttons (only available ones; no hint/help)
+            // Action buttons (draw is automatic; only win/pung/kong/ankang)
             key(tick) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (game.winner < 0 && !game.exhausted && game.current == 0) {
-                        if (!game.hasDrawn) {
-                            ElderButton(text = "摸牌", onClick = ::onDraw, modifier = Modifier.weight(1f), minHeight = 44.dp)
-                        } else if (game.canWin(0)) {
-                            ElderButton(text = "和牌", onClick = ::onSelfWin, modifier = Modifier.weight(1f), minHeight = 44.dp, colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White))
+                        if (game.hasDrawn && game.canWin(0)) {
+                            ElderButton(
+                                text = "和牌", onClick = ::onSelfWin, modifier = Modifier.weight(1f), minHeight = 44.dp,
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
+                            )
                         }
+                        if (canPungNow) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
+                        if (canKongNow) ElderButton(text = "杠", onClick = ::onKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
+                        if (canWinNow) ElderButton(
+                            text = "和", onClick = ::onWinByDiscard, modifier = Modifier.weight(1f), minHeight = 44.dp,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
+                        )
+                        if (game.hasDrawn && game.canConcealedKong(0)) ElderButton(text = "暗杠", onClick = ::onConcealedKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
                     }
-                    if (canPungNow && game.winner < 0) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
-                    if (canKongNow && game.winner < 0) ElderButton(text = "杠", onClick = ::onKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
-                    if (canWinNow && game.winner < 0) ElderButton(text = "和", onClick = ::onWinByDiscard, modifier = Modifier.weight(1f), minHeight = 44.dp, colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White))
-                    if (game.canConcealedKong(0) && game.winner < 0) ElderButton(text = "暗杠", onClick = ::onConcealedKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
                 }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: centered; newly drawn tile on the right with a gap
+            // Player hand: sorted playable tiles + newly drawn tile on the right with a gap
             key(tick) {
-                val hand = game.hands[0].sortedBy { it.groupKey() }
-                val drawn = if (game.hasDrawn) hand.last() else null
-                val playable = if (drawn != null) hand.filter { it != drawn } else hand
+                val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
+                val raw = game.hands[0].toMutableList()
+                if (drawn != null) raw.removeAt(raw.lastIndex)
+                val playable = raw.sortedBy { it.groupKey() }
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(56.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.Bottom,
                 ) {
-                    // played tiles (centered, small)
                     playable.forEach { t ->
                         TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
                     }
-                    // gap + newly drawn tile (right side, slightly raised)
                     if (drawn != null) {
                         Spacer(Modifier.width(18.dp))
                         TileFace(
@@ -262,14 +278,14 @@ fun MahjongScreen(
         ) {
             Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
                 Column(modifier = Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (game.winner == 0) "🎉 你胡了！" else "😊 电脑${game.winner} 胡了", fontSize = 22.sp)
+                    Text(if (game.winner == 0) "🎉 你胡了！" else "😊 ${seatName(game.winner)} 胡了", fontSize = 22.sp)
                     Spacer(Modifier.height(8.dp))
                     if (game.winner == 0) {
                         game.winFans.forEach { f -> Text("${f.name}  ${f.fan}番", fontSize = 15.sp) }
                         Spacer(Modifier.height(6.dp))
                         Text("共 ${FanCalculator.total(game.winFans)} 番", fontSize = 20.sp, color = Color(0xFFB23A3A))
                     } else {
-                        Text("电脑和牌，继续加油！", fontSize = 15.sp)
+                        Text("${seatName(game.winner)} 和牌，继续加油！", fontSize = 15.sp)
                     }
                     Spacer(Modifier.height(20.dp))
                     ElderButton(text = "再来一局", onClick = { game.newRound(); showFanDialog = false; refresh() }, modifier = Modifier.fillMaxWidth())
@@ -283,18 +299,6 @@ fun MahjongScreen(
 
     LaunchedEffect(tick) {
         if (game.current == 0 && game.lastDiscard != null && game.winner < 0) checkActions()
-    }
-}
-
-/** Tile wall stack (backs) with remaining count */
-@Composable
-private fun WallDisplay(count: Int, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Column(verticalArrangement = Arrangement.spacedBy((-4).dp)) {
-            repeat(3) { TileBack(Modifier.size(18.dp, 24.dp)) }
-        }
-        Spacer(Modifier.width(4.dp))
-        Text("$count", fontSize = 11.sp, color = Color(0xFFFFE082))
     }
 }
 

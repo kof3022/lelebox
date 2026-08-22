@@ -106,7 +106,7 @@ object Games {
             id = "mahjong",
             title = "麻将",
             subtitle = "凑齐四副加一对就胡",
-            help = "你和三位电脑打国标麻将。摸牌、打牌，凑成四副顺子或刻子加一对将就胡牌。可以吃、碰、杠。胡牌后看看赢多少番。",
+            help = "你和孙权、曹操、刘备三位打国标麻将。轮到你会自动摸牌，点一张牌打出去，凑成四副顺子或刻子加一对将就胡牌。可以碰、杠。胡牌后看看赢多少番。",
             kind = GameKind.NATIVE,
             emoji = "🀄",
             accent = GameMahjong,

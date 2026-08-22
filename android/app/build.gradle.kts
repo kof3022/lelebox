@@ -33,8 +33,8 @@ android {
         applicationId = "com.lelebox.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 36
-        versionName = "0.5.3-m1"
+        versionCode = 37
+        versionName = "0.5.4-m1"
         vectorDrawables { useSupportLibrary = true }
     }
 

@@ -23,6 +23,7 @@
 | Simple-Solitaire | [TobiasBielefeld/Simple-Solitaire](https://github.com/tobiasBielefeld/Simple-Solitaire) | GPL-3.0 | Klondike 规则参考 → 自研 H5 实现 |
 | antimine（扫雷） | [lucasnlm/antimine-android](https://github.com/lucasnlm/antimine-android) | Apache-2.0 | M2 扫雷 + 无障碍实现样板（未使用） |
 | 记忆翻牌 | [bojidar-bg/simple-memory-android](https://github.com/bojidar-bg/simple-memory-android) | 开源 | 玩法参考 → 自研实现（未复制代码） |
+| 麻将牌面素材 | [lietxia/mahjong_graphic](https://github.com/lietxia/mahjong_graphic) | M+ 字体授权（免费商用，可修改） | 34 面牌 + 背面 PNG 直接接入 `res/drawable/mj_*`；部分图形源自 [SyaoranHinata/I.Mahjong](https://github.com/SyaoranHinata/I.Mahjong)（随仓库授权） |
 
 ## 已评估弃用（审计未通过，记录在案）
 

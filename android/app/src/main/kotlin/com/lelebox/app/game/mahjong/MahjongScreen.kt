@@ -152,53 +152,62 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
+            // Table area: key(tick) forces full recomposition on every state change
+            // (discard rows are built from mutable lists that Compose otherwise skips)
+            key(tick) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // ---- Top seat 2: wall + discards + hand back ----
-                Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
-                    WallDisplay(count = game.walls[2].size)
-                    OpponentDiscardRow(game.discards[2])
-                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                        repeat(minOf(game.hands[2].size, 12)) { TileBack(Modifier.size(14.dp, 20.dp)) }
-                    }
-                    Text("电脑2", fontSize = 10.sp, color = Color(0xFFE8F0E4))
-                }
-                // ---- Left seat 3: wall + discards + vertical hand ----
-                Column(modifier = Modifier.align(Alignment.CenterStart), horizontalAlignment = Alignment.CenterHorizontally) {
-                    WallDisplay(count = game.walls[3].size)
-                    Text("电脑3", fontSize = 10.sp, color = Color(0xFFE8F0E4))
-                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
-                        repeat(minOf(game.hands[3].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
-                    }
-                    OpponentDiscardRow(game.discards[3])
-                }
-                // ---- Right seat 1: wall + discards + vertical hand ----
-                Column(modifier = Modifier.align(Alignment.CenterEnd), horizontalAlignment = Alignment.CenterHorizontally) {
-                    WallDisplay(count = game.walls[1].size)
-                    Text("电脑1", fontSize = 10.sp, color = Color(0xFFE8F0E4))
-                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
-                        repeat(minOf(game.hands[1].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
-                    }
-                    OpponentDiscardRow(game.discards[1])
-                }
-                // ---- Center: dice + last discard ----
+                // ---- Center: tile mountain (un-drawn wall) + dice ----
                 Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     // Dice
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         DieFace(game.dice1)
                         DieFace(game.dice2)
                     }
+                    Spacer(Modifier.height(2.dp))
+                    // Tile mountain: two rows of tile backs (remaining wall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(verticalArrangement = Arrangement.spacedBy((-5).dp)) {
+                            repeat(4) { TileBack(Modifier.size(22.dp, 30.dp)) }
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text("${game.walls.sumOf { it.size }}", fontSize = 14.sp, color = Color(0xFFFFE082))
+                    }
                     Spacer(Modifier.height(4.dp))
-                    Text("从第${game.currentWall + 1}面墙起抓", fontSize = 12.sp, color = Color(0xFFFFE082))
-                    Spacer(Modifier.height(6.dp))
                     if (game.lastDiscard != null) {
                         TileFace(game.lastDiscard!!, Modifier.size(44.dp, 62.dp))
                     } else if (game.hasDrawn) {
                         Text("请打出一张牌", fontSize = 15.sp, color = Color(0xFFFFE082))
                     }
+                    // Player's own discard history, under the last-discard display
+                    OpponentDiscardRow(game.discards[0])
                 }
-                // ---- Player wall (bottom center) ----
-                WallDisplay(count = game.walls[0].size, modifier = Modifier.align(Alignment.BottomCenter))
+                // ---- Top seat 2: discards + hand back ----
+                Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
+                    OpponentDiscardRow(game.discards[2])
+                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                        repeat(minOf(game.hands[2].size, 12)) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                    }
+                    Text("电脑2", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                }
+                // ---- Left seat 3: discards + vertical hand ----
+                Column(modifier = Modifier.align(Alignment.CenterStart), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("电脑3", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(minOf(game.hands[3].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
+                    }
+                    OpponentDiscardRow(game.discards[3])
+                }
+                // ---- Right seat 1: discards + vertical hand ----
+                Column(modifier = Modifier.align(Alignment.CenterEnd), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("电脑1", fontSize = 10.sp, color = Color(0xFFE8F0E4))
+                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(minOf(game.hands[1].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
+                    }
+                    OpponentDiscardRow(game.discards[1])
+                }
+                // ---- Player discards now live inside the center column (above) ----
             }
+            } // key(tick)
 
             // Action buttons (only available ones; no hint/help)
             key(tick) {
@@ -291,9 +300,9 @@ private fun WallDisplay(count: Int, modifier: Modifier = Modifier) {
 
 /** Opponent discard history row (up to 8 recent) */
 @Composable
-private fun OpponentDiscardRow(discards: List<Tile>) {
+private fun OpponentDiscardRow(discards: List<Tile>, modifier: Modifier = Modifier) {
     if (discards.isEmpty()) return
-    Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(1.dp)) {
         discards.takeLast(8).forEach { t -> TileFace(t, Modifier.size(14.dp, 20.dp)) }
     }
 }

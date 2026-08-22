@@ -2,30 +2,36 @@ package com.lelebox.app.game.mahjong
 
 import kotlin.random.Random
 
-/** ：0=，1..3= */
+/** Mahjong game: 0=player, 1..3=AI. GuoBiao rules. */
 class MahjongGame(seed: Long = System.currentTimeMillis()) {
     val rng = Random(seed)
 
-    /** 4 （，） */
+    /** 4 hands (0=player) */
     val hands = Array(4) { mutableListOf<Tile>() }
-    /** （//），0= */
+    /** exposed melds per player (chow/pung/kong) */
     val exposed = Array(4) { mutableListOf<Meld>() }
-    /** （） */
+    /** concealed flag per player */
     val concealed = BooleanArray(4) { true }
-    /**  */
-    val wall = mutableListOf<Tile>()
-    /**  */
+    /** discard history per player (shown on table) */
+    val discards = Array(4) { mutableListOf<Tile>() }
+    /** 4 tile walls in front of each player */
+    val walls = Array(4) { mutableListOf<Tile>() }
+    /** current seat */
     var current = 0
-    /** （//） */
+    /** last discarded tile */
     var lastDiscard: Tile? = null
-    /**  */
+    /** who discarded last */
     var lastDiscardPlayer = -1
-    /** （ 14 ） */
+    /** player has drawn (14 tiles in hand) */
     var hasDrawn = false
-    /**  */
+    /** all walls exhausted */
     var exhausted = false
+    /** dice values (1..6 each) */
+    var dice1 = 0
+    var dice2 = 0
+    /** which wall to draw from next (0=player front, clockwise 1..3) */
+    var currentWall = 0
 
-    /**  */
     var winner = -1
     var winScheme: WinScheme? = null
     var winFans: List<FanResult> = emptyList()
@@ -35,17 +41,21 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
     init { newRound() }
 
     fun newRound() {
-        val tiles = Tile.fullSet().shuffled(rng)
-        wall.clear()
-        wall.addAll(tiles)
+        val tiles = Tile.fullSet().shuffled(rng).toMutableList()
         for (p in 0..3) {
             hands[p].clear()
             exposed[p].clear()
             concealed[p] = true
-            repeat(13) {
-                hands[p].add(wall.removeAt(0))
-            }
+            discards[p].clear()
+            walls[p].clear()
+            repeat(13) { hands[p].add(tiles.removeAt(0)) }
         }
+        // Remaining 84 tiles -> 4 walls of 21 in front of each player
+        repeat(84) { walls[it / 21].add(tiles.removeAt(0)) }
+        // Roll two dice; sum decides starting wall
+        dice1 = rng.nextInt(1, 7)
+        dice2 = rng.nextInt(1, 7)
+        currentWall = (dice1 + dice2) % 4
         current = 0
         lastDiscard = null
         lastDiscardPlayer = -1
@@ -56,55 +66,59 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         winFans = emptyList()
         winSelfDraw = false
         winByTile = null
-        draw(0) //  1 ， 14 
+        draw(0) // dealer draws one, hand = 14
     }
 
-    /** ； */
+    /** Draw from current wall; if empty try next wall clockwise; all empty -> exhausted */
     fun draw(p: Int): Boolean {
-        if (wall.isEmpty()) { exhausted = true; return false }
-        hands[p].add(wall.removeAt(wall.lastIndex))
-        if (p == 0) hasDrawn = true
-        return true
+        for (offset in 0..3) {
+            val w = (currentWall + offset) % 4
+            if (walls[w].isNotEmpty()) {
+                hands[p].add(walls[w].removeAt(walls[w].lastIndex))
+                currentWall = (w + 1) % 4
+                if (p == 0) hasDrawn = true
+                return true
+            }
+        }
+        exhausted = true
+        return false
     }
 
-    /** ； */
+    /** Discard a tile; record into history */
     fun discard(p: Int, tile: Tile): Boolean {
         if (!hands[p].remove(tile)) return false
         lastDiscard = tile
         lastDiscardPlayer = p
+        discards[p].add(tile)
         if (p == 0) hasDrawn = false
-        // 
         current = (p + 1) % 4
         return true
     }
 
-    /**  p （） */
     fun canWin(p: Int): Boolean {
         val tiles = hands[p]
         if (tiles.size % 3 != 2) return false
         return Mahjong.findWins(tiles).isNotEmpty()
     }
 
-    /**  */
     fun selfWin(p: Int): Boolean {
         if (!canWin(p)) return false
         return doWin(p, hands[p].toList(), null, selfDraw = true)
     }
 
-    /** p （ p == lastDiscardPlayer ） */
+    /** Chow options for player p using the given discard (only from the player above, seat 3) */
     fun chowOptions(p: Int, discard: Tile): List<List<Tile>> {
         if (discard.suit >= 3) return emptyList()
         val r = discard.rank
         val hand = hands[p].toList()
         val options = mutableListOf<List<Tile>>()
-        //  discard ：r-2..r、r-1..r+1、r..r+2
         for (start in (r - 2)..r) {
             if (start < 1 || start + 2 > 9) continue
             val need = listOf(Tile(discard.suit, start), Tile(discard.suit, start + 1), Tile(discard.suit, start + 2))
             val remaining = hand.toMutableList()
             var ok = true
             for (n in need) {
-                if (n == discard) continue // 
+                if (n == discard) continue
                 val idx = remaining.indexOf(n)
                 if (idx < 0) { ok = false; break }
                 remaining.removeAt(idx)
@@ -114,10 +128,10 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return options.distinct()
     }
 
-    /** Player chows the discard from player above (seat 3) */
+    /** Player chows from the player above (seat 3) */
     fun doChow(option: List<Tile>): Boolean {
         val d = lastDiscard ?: return false
-        if (lastDiscardPlayer != 3) return false // only chow from the player above
+        if (lastDiscardPlayer != 3) return false
         val hand = hands[0].toMutableList()
         for (t in option) if (t != d) { if (!hand.remove(t)) return false }
         hands[0].clear(); hands[0].addAll(hand)
@@ -130,7 +144,6 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** /：p  2/3  +  1 / */
     fun canPung(p: Int): Boolean {
         val d = lastDiscard ?: return false
         return hands[p].count { it == d } >= 2
@@ -162,11 +175,10 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         lastDiscard = null
         current = p
         hasDrawn = false
-        draw(p) // 
+        draw(p)
         return true
     }
 
-    /**  */
     fun canConcealedKong(p: Int): Boolean {
         return hands[p].groupBy { it }.values.any { it.size == 4 }
     }
@@ -181,7 +193,6 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /**  */
     private fun doWin(p: Int, tiles: List<Tile>, byTile: Tile?, selfDraw: Boolean): Boolean {
         val schemes = Mahjong.findWins(tiles)
         val scheme = schemes.firstOrNull() ?: return false
@@ -193,7 +204,6 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** （） */
     fun winByDiscard(p: Int, tile: Tile): Boolean {
         if (lastDiscard != tile) return false
         val tiles = hands[p].toList() + tile
@@ -207,21 +217,18 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** ：→（//）→ */
+    /** AI turn: draw, decide (win/kong), discard */
     fun aiTurn(p: Int) {
         if (winner >= 0 || exhausted) return
         draw(p)
         if (canWin(p)) { selfWin(p); return }
-        // 
         if (canConcealedKong(p)) doConcealedKong(p)
-        // ：「」（、）
         val discard = pickDiscard(p)
         discard(p, discard)
     }
 
     private fun pickDiscard(p: Int): Tile {
         val hand = hands[p].sortedBy { it.groupKey() }
-        // ""：；
         fun score(t: Tile): Int {
             var s = hand.count { it == t } * 10
             if (t.suit < 3) {
@@ -230,7 +237,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
                 if (!left) s += 5
                 if (!right) s += 5
             } else {
-                s += 3 // ，
+                s += 3
             }
             return s
         }

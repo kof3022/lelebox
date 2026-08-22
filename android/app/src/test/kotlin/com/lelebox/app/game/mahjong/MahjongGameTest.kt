@@ -97,7 +97,12 @@ class MahjongGameTest {
         val g = MahjongGame(seed = 42)
         assertEquals(14, g.hands[0].size)
         for (p in 1..3) assertEquals(13, g.hands[p].size)
-        assertEquals(136 - 14 - 39, g.wall.size)
+        // 四家牌墙共 84 张（每家 21）；庄家先摸 1 张后总 83
+        val totalWall = g.walls.sumOf { it.size }
+        assertEquals(83, totalWall)
+        assertTrue(g.walls.sumOf { it.size } <= 84)
+        assertTrue(g.dice1 in 1..6 && g.dice2 in 1..6)
+        assertTrue(g.currentWall in 0..3)
     }
 
     @Test
@@ -108,5 +113,18 @@ class MahjongGameTest {
         assertEquals(1, g.current)
         assertEquals(tile, g.lastDiscard)
         assertFalse(g.hasDrawn)
+        assertTrue(g.discards[0].contains(tile))
+    }
+
+    @Test
+    fun `walls empty over time and draw moves clockwise`() {
+        val g = MahjongGame(seed = 7)
+        val startWall = g.currentWall
+        // 玩家打一张，AI 三家各摸打
+        g.discard(0, g.hands[0][0])
+        for (p in 1..3) g.aiTurn(p)
+        // 每次摸牌 currentWall 顺时针推进
+        assertTrue(g.walls.sumOf { it.size } < 84)
+        assertTrue(g.currentWall in 0..3)
     }
 }

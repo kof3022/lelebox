@@ -135,7 +135,6 @@ class GameShellActivity : ComponentActivity() {
                             )
                             "mahjong" -> MahjongScreen(
                                 onBack = { finish() },
-                                onHelp = { showHelp = true },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             else -> NativePlaceholder(game)

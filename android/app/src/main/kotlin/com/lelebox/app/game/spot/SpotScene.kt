@@ -432,8 +432,11 @@ private fun DrawScope.drawSnow(variant: Boolean) {
     }
     if (!variant) circle(Color.White, 840f, 400f, 40f) // 树上的雪
     if (!variant) {
-        rect(Color(0xFFC4623C), 750f, 800f, 880f, 830f)
-        rect(Color(0xFF8A5A2B), 730f, 830f, 890f, 845f)
+        // 红色雪橇：亮红座椅 + 深棕滑板，在雪地里清晰可见
+        rect(Color(0xFFE85D5D), 720f, 785f, 900f, 822f)   // 座椅
+        rect(Color(0xFF5A3A22), 704f, 822f, 916f, 840f)   // 滑板
+        rect(Color(0xFF5A3A22), 704f, 785f, 726f, 822f)   // 左立柱
+        rect(Color(0xFF5A3A22), 894f, 785f, 916f, 822f)   // 右立柱
     }
     if (!variant) {
         // 彩色雪人：白身 + 黑帽 + 橙鼻子 + 红围巾 + 黑眼睛/纽扣（在雪地里清晰可见）

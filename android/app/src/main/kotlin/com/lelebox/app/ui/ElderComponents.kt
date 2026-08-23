@@ -177,7 +177,7 @@ fun ElderTopBar(
             ) {
                 if (onBack != null) {
                     ElderButton(
-                        text = "← 返回",
+                        text = "← 回主页",
                         onClick = onBack,
                         minHeight = 52.dp,
                         colors = ButtonDefaults.buttonColors(

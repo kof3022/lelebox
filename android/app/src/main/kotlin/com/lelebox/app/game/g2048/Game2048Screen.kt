@@ -113,8 +113,10 @@ fun Game2048Screen(
         else -> "再来一局，争取更高分！"
     }
 
+    // 外层 Box：让结束/达成遮罩能叠在棋盘上方（兄弟节点在壳 Column 里会被堆到屏幕外）
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -232,11 +234,14 @@ fun Game2048Screen(
 
     // 达成 2048 提示（可继续）
     if (won && !winDismissed && !over) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -250,15 +255,19 @@ fun Game2048Screen(
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "再来一局", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
         }
+        }
     }
 
     // 本局结束
     if (over) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -288,6 +297,8 @@ fun Game2048Screen(
             Spacer(Modifier.height(32.dp))
             ElderButton(text = "再来一局", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
         }
+        }
+    }
     }
 }
 

@@ -158,8 +158,10 @@ private fun LinkBoard(
         if (game.over) Sfx.success(context)
     }
 
+    // 外层 Box：让结束遮罩能叠在棋盘上方（兄弟节点在壳 Column 里会被堆到屏幕外）
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -224,11 +226,14 @@ private fun LinkBoard(
     }
 
     if (game.over) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -258,6 +263,8 @@ private fun LinkBoard(
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
         }
+        }
+    }
     }
 }
 

@@ -213,8 +213,10 @@ private fun SudokuBoard(
         save()
     }
 
+    // 外层 Box：让结束/提示遮罩能叠在棋盘上方（兄弟节点在壳 Column 里会被堆到屏幕外）
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -336,11 +338,14 @@ private fun SudokuBoard(
     }
 
     if (won) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -377,15 +382,19 @@ private fun SudokuBoard(
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
         }
+        }
     }
 
     // 填满但有错：不能直接判定结束，给用户明确的互动（继续修改 / 重来）
     if (fullWithErrors && !errorNotice) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xCC000000))
-                .padding(24.dp),
+                .background(Color(0xCC000000)),
+            contentAlignment = Alignment.Center,
+        ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -414,6 +423,8 @@ private fun SudokuBoard(
                 ),
             )
         }
+        }
+    }
     }
 }
 

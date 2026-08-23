@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -127,14 +126,14 @@ fun MahjongScreen(
         }
     }
 
-    // Auto draw for the player (no draw button). Short grace period when the player
-    // could pung/kong/win on the last discard, so they can tap an action first.
+    // Auto draw for the player (no draw button). Long grace period when the player
+    // could pung/kong/win on the last discard, so they have time to see and tap.
     LaunchedEffect(tick) {
         if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
             val d = game.lastDiscard
             val pending = d != null && (game.canPung(0) || game.canKong(0) ||
                 Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty())
-            delay(if (pending) 1600 else 300)
+            delay(if (pending) 6000 else 300)
             if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
                 game.draw(0)
                 if (game.canWin(0)) Sfx.success(context)
@@ -180,16 +179,20 @@ fun MahjongScreen(
                         Text("${game.walls.sumOf { it.size }}", fontSize = 18.sp, color = Color(0xFFFFE082))
                     }
                     Spacer(Modifier.height(6.dp))
-                    // 小状态（无"轮到你"提示；自动摸牌即时发生）
-                    when {
-                        game.winner >= 0 -> {}
-                        game.exhausted -> {
-                            Text("流局", fontSize = 14.sp, color = Color(0xFFFFE082))
-                            Spacer(Modifier.height(4.dp))
-                            ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 36.dp)
+                    // 固定高度状态槽：提示/再来一局 出现与否都不影响牌墙位置
+                    Box(modifier = Modifier.height(60.dp), contentAlignment = Alignment.Center) {
+                        when {
+                            game.winner >= 0 -> {}
+                            game.exhausted -> {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("流局", fontSize = 14.sp, color = Color(0xFFFFE082))
+                                    Spacer(Modifier.height(2.dp))
+                                    ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 34.dp)
+                                }
+                            }
+                            game.current != 0 -> Text("电脑摸打中…", fontSize = 13.sp, color = Color(0xFFE8F0E4))
+                            else -> {}
                         }
-                        game.current != 0 -> Text("电脑摸打中…", fontSize = 13.sp, color = Color(0xFFE8F0E4))
-                        else -> {}
                     }
                 }
                 // ---- Top seat 2 (曹操): avatar+name above, hand backs, discards below ----
@@ -261,26 +264,17 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: sorted playable tiles + newly drawn tile on the right with a gap
+            // Player hand: all tiles sorted together (drawn tile sorts into place,
+            // winds stay grouped: 东南西北), no right-side separation
             key(tick) {
-                val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
-                val raw = game.hands[0].toMutableList()
-                if (drawn != null) raw.removeAt(raw.lastIndex)
-                val playable = raw.sortedBy { it.groupKey() }
+                val hand = game.hands[0].sortedBy { it.groupKey() }
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(56.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.Bottom,
                 ) {
-                    playable.forEach { t ->
+                    hand.forEach { t ->
                         TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
-                    }
-                    if (drawn != null) {
-                        Spacer(Modifier.width(18.dp))
-                        TileFace(
-                            drawn,
-                            Modifier.size(32.dp, 46.dp).offset(y = (-6).dp).clickable { onDiscard(drawn) },
-                        )
                     }
                 }
             }
@@ -319,15 +313,20 @@ fun MahjongScreen(
     }
 }
 
-/** Opponent discard history row (up to 8 recent); newest tile slightly larger = 刚出的牌 */
+/** 弃牌行：全部显示（牌多时缩小）；最新一张略大 = 刚出的牌 */
 @Composable
 private fun OpponentDiscardRow(discards: List<Tile>, modifier: Modifier = Modifier) {
     if (discards.isEmpty()) return
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
-        val recent = discards.takeLast(8)
-        recent.forEachIndexed { i, t ->
-            val last = i == recent.lastIndex
-            TileFace(t, Modifier.size(if (last) 18.dp else 14.dp, if (last) 26.dp else 20.dp))
+        val n = discards.size
+        discards.forEachIndexed { i, t ->
+            val last = i == n - 1
+            val (w, h) = if (n > 10) {
+                if (last) 13.dp to 18.dp else 10.dp to 14.dp
+            } else {
+                if (last) 18.dp to 26.dp else 14.dp to 20.dp
+            }
+            TileFace(t, Modifier.size(w, h))
         }
     }
 }

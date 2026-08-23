@@ -176,8 +176,12 @@ fun MahjongScreen(
                     minHeight = 36.dp,
                     modifier = Modifier.width(48.dp).align(Alignment.TopStart),
                 )
-                // ---- Center: two-layer tile wall at the table middle; status attached below ----
-                Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                // ---- Center: two-layer tile wall anchored near the screen's vertical middle;
+                //      status/restart attached right below (moves as one unit) ----
+                Column(
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 160.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     // Two-layer tile wall (schematic) + remaining count
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(verticalArrangement = Arrangement.spacedBy((-6).dp)) {
@@ -217,9 +221,9 @@ fun MahjongScreen(
                     }
                     OpponentDiscardRows(game.discards[2])
                 }
-                // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row left-aligned ----
+                // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row ----
                 Column(
-                    modifier = Modifier.align(Alignment.TopStart).padding(top = 110.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 60.dp),
                     horizontalAlignment = Alignment.Start,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -232,9 +236,9 @@ fun MahjongScreen(
                     }
                     OpponentDiscardRows(game.discards[3], alignment = Alignment.Start)
                 }
-                // ---- Right seat 1 (孙权): top-anchored (avatar never moves), discards multi-row right-aligned ----
+                // ---- Right seat 1 (孙权): top-anchored (avatar never moves), discards multi-row ----
                 Column(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 110.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 60.dp),
                     horizontalAlignment = Alignment.End,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -250,10 +254,8 @@ fun MahjongScreen(
             }
             } // key(tick)
 
-            // Action buttons (draw is automatic; only win/pung/kong/ankang).
-            // Fixed-height slot: buttons appearing/disappearing never move the wall.
+            // Action buttons (only when actions exist; wall is top-anchored so it never shifts)
             key(tick) {
-                Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (game.winner < 0 && !game.exhausted && game.current == 0) {
                         if (canPungNow) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
@@ -275,14 +277,13 @@ fun MahjongScreen(
                         if (game.hasDrawn && game.canConcealedKong(0)) ElderButton(text = "暗杠", onClick = ::onConcealedKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
                     }
                 }
-                }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's own discards: fixed-height slot (2 rows) just above the hand; wall never shifts
+            // Player's own discards: 8 per row, wraps upward from the hand
             key(tick) {
-                Box(modifier = Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.BottomCenter) {
-                    OpponentDiscardRows(game.discards[0], perRow = 10)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    OpponentDiscardRows(game.discards[0], perRow = 8)
                 }
             }
             Spacer(Modifier.height(2.dp))

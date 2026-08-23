@@ -30,7 +30,7 @@ data class GameEntry(
 )
 
 object Games {
-    /** 第一批（M1）：2048/数独/记忆翻牌原生；M2 起新增游戏（docs/11） */
+    /** 主页顺序：斗地主、麻将、记忆翻牌、2048、连连看、五子棋、数独、找不同 */
     val firstBatch = listOf(
         GameEntry(
             id = "doudizhu",
@@ -43,14 +43,33 @@ object Games {
             iconRes = R.drawable.ic_game_doudizhu,
         ),
         GameEntry(
-            id = "spot",
-            title = "找不同",
-            subtitle = "找一找哪里不一样",
-            help = "左边和右边两幅图，找一找哪里不一样，点一下就算找到。全部找齐就赢啦！",
+            id = "mahjong",
+            title = "麻将",
+            subtitle = "凑齐四副加一对就胡",
+            help = "你和孙权、曹操、刘备三位打国标麻将。轮到你会自动摸牌，点一张牌打出去，凑成四副顺子或刻子加一对将就胡牌。可以碰、杠。胡牌后看看赢多少番。",
             kind = GameKind.NATIVE,
-            emoji = "🔍",
-            accent = GameSpot,
-            iconRes = R.drawable.ic_game_spot,
+            emoji = "🀄",
+            accent = GameMahjong,
+        ),
+        GameEntry(
+            id = "memory",
+            title = "记忆翻牌",
+            subtitle = "翻开两张相同的牌",
+            help = "点一张牌翻开，再点另一张。两张图案一样就配对成功，不一样会自己翻回去。全部配对成功就赢啦！",
+            kind = GameKind.NATIVE,
+            emoji = "🎴",
+            accent = GameMemory,
+            iconRes = R.drawable.ic_game_memory,
+        ),
+        GameEntry(
+            id = "2048",
+            title = "2048",
+            subtitle = "合并数字，越合越大",
+            help = "向左、向右、向上或向下滑动，相同数字碰到一起会合并成更大的数字。也可以点下面的大方向按钮。目标：合成 2048！",
+            kind = GameKind.NATIVE,
+            emoji = "🔢",
+            accent = Game2048,
+            iconRes = R.drawable.ic_game_2048,
         ),
         GameEntry(
             id = "link",
@@ -73,16 +92,6 @@ object Games {
             iconRes = R.drawable.ic_game_gomoku,
         ),
         GameEntry(
-            id = "2048",
-            title = "2048",
-            subtitle = "合并数字，越合越大",
-            help = "向左、向右、向上或向下滑动，相同数字碰到一起会合并成更大的数字。也可以点下面的大方向按钮。目标：合成 2048！",
-            kind = GameKind.NATIVE,
-            emoji = "🔢",
-            accent = Game2048,
-            iconRes = R.drawable.ic_game_2048,
-        ),
-        GameEntry(
             id = "sudoku",
             title = "数独",
             subtitle = "每行每列每宫不重复",
@@ -93,23 +102,14 @@ object Games {
             iconRes = R.drawable.ic_game_sudoku,
         ),
         GameEntry(
-            id = "memory",
-            title = "记忆翻牌",
-            subtitle = "翻开两张相同的牌",
-            help = "点一张牌翻开，再点另一张。两张图案一样就配对成功，不一样会自己翻回去。全部配对成功就赢啦！",
+            id = "spot",
+            title = "找不同",
+            subtitle = "找一找哪里不一样",
+            help = "左边和右边两幅图，找一找哪里不一样，点一下就算找到。全部找齐就赢啦！",
             kind = GameKind.NATIVE,
-            emoji = "🎴",
-            accent = GameMemory,
-            iconRes = R.drawable.ic_game_memory,
-        ),
-        GameEntry(
-            id = "mahjong",
-            title = "麻将",
-            subtitle = "凑齐四副加一对就胡",
-            help = "你和孙权、曹操、刘备三位打国标麻将。轮到你会自动摸牌，点一张牌打出去，凑成四副顺子或刻子加一对将就胡牌。可以碰、杠。胡牌后看看赢多少番。",
-            kind = GameKind.NATIVE,
-            emoji = "🀄",
-            accent = GameMahjong,
+            emoji = "🔍",
+            accent = GameSpot,
+            iconRes = R.drawable.ic_game_spot,
         ),
     )
 

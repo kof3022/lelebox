@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,10 +44,13 @@ import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import com.lelebox.app.ui.ElderGreen
 
-/** 牌面图案（水果，颜色鲜明易辨；后续可换即梦图标） */
-private val TILE_EMOJIS = listOf(
-    "🍎", "🍊", "🍇", "🍓", "🍑", "🍒", "🍋", "🍉",
+/** 牌面图案（即梦生成水果图标，已压缩入 drawable-xxhdpi；顺序与 LinkGame 的 symbol 1..8 对应） */
+private val TILE_RES = listOf(
+    R.drawable.link_apple, R.drawable.link_orange, R.drawable.link_grape, R.drawable.link_strawberry,
+    R.drawable.link_peach, R.drawable.link_cherry, R.drawable.link_lemon, R.drawable.link_watermelon,
 )
+
+private val TILE_NAMES = listOf("苹果", "橙子", "葡萄", "草莓", "桃子", "樱桃", "柠檬", "西瓜")
 
 /** 连连看入口 */
 @Composable
@@ -199,9 +203,11 @@ private fun LinkBoard(
                     ) {
                         for (x in 0 until game.cols) {
                             val idx = y * game.cols + x
+                            val s = game.symbols[idx]
                             LinkTile(
-                                emoji = if (game.symbols[idx] > 0) TILE_EMOJIS[(game.symbols[idx] - 1) % TILE_EMOJIS.size] else "",
-                                removed = game.symbols[idx] == 0,
+                                res = if (s > 0) TILE_RES[(s - 1) % TILE_RES.size] else null,
+                                name = if (s > 0) TILE_NAMES[(s - 1) % TILE_NAMES.size] else "",
+                                removed = s == 0,
                                 selected = selected == idx,
                                 x = x, y = y,
                                 onClick = { onTileTap(idx) },
@@ -272,7 +278,8 @@ private fun LinkBoard(
 
 @Composable
 private fun LinkTile(
-    emoji: String,
+    res: Int?,
+    name: String,
     removed: Boolean,
     selected: Boolean,
     x: Int,
@@ -286,7 +293,7 @@ private fun LinkTile(
     }
     Box(
         modifier = modifier
-            .semantics { contentDescription = if (removed) "第${y + 1}行第${x + 1}列，已消" else "第${y + 1}行第${x + 1}列，图案$emoji" }
+            .semantics { contentDescription = if (removed) "第${y + 1}行第${x + 1}列，已消" else "第${y + 1}行第${x + 1}列，图案$name" }
             .clip(RoundedCornerShape(10.dp))
             .background(bg)
             .border(
@@ -297,8 +304,15 @@ private fun LinkTile(
             .clickable(enabled = !removed, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (!removed) {
-            Text(emoji, fontSize = 26.sp)
+        if (!removed && res != null) {
+            Image(
+                painter = painterResource(res),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize(0.8f)
+                    .clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Fit,
+            )
         }
     }
 }

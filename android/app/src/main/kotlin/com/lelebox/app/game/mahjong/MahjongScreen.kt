@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -175,7 +176,7 @@ fun MahjongScreen(
                     minHeight = 36.dp,
                     modifier = Modifier.width(48.dp).align(Alignment.TopStart),
                 )
-                // ---- Center: two-layer tile wall (牌墙居中) + 状态 ----
+                // ---- Center: two-layer tile wall at the table middle; status attached below ----
                 Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     // Two-layer tile wall (schematic) + remaining count
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -190,23 +191,21 @@ fun MahjongScreen(
                         Text("${game.walls.sumOf { it.size }}", fontSize = 18.sp, color = Color(0xFFFFE082))
                     }
                     Spacer(Modifier.height(6.dp))
-                    // 固定高度状态槽：提示/再来一局 出现与否都不影响牌墙位置
-                    Box(modifier = Modifier.height(60.dp), contentAlignment = Alignment.Center) {
-                        when {
-                            game.winner >= 0 -> {}
-                            game.exhausted -> {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("流局", fontSize = 14.sp, color = Color(0xFFFFE082))
-                                    Spacer(Modifier.height(2.dp))
-                                    ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 34.dp)
-                                }
+                    // 提示消息紧贴牌墙下方，作为同一居中整体随牌墙移动
+                    when {
+                        game.winner >= 0 -> {}
+                        game.exhausted -> {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("流局", fontSize = 14.sp, color = Color(0xFFFFE082))
+                                Spacer(Modifier.height(2.dp))
+                                ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 34.dp)
                             }
-                            game.current != 0 -> Text("电脑摸打中…", fontSize = 13.sp, color = Color(0xFFE8F0E4))
-                            else -> {}
                         }
+                        game.current != 0 -> Text("电脑摸打中…", fontSize = 13.sp, color = Color(0xFFE8F0E4))
+                        else -> {}
                     }
                 }
-                // ---- Top seat 2 (曹操): avatar+name above, hand backs, discards below ----
+                // ---- Top seat 2 (曹操): avatar+name fixed at top, hand backs, discards multi-row ----
                 Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SeatAvatar(R.drawable.avatar_caocao)
@@ -216,31 +215,37 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(minOf(game.hands[2].size, 12)) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    OpponentDiscardRow(game.discards[2])
+                    OpponentDiscardRows(game.discards[2])
                 }
-                // ---- Left seat 3 (刘备): avatar+name above, vertical hand, discards below ----
-                Column(modifier = Modifier.align(Alignment.CenterStart), horizontalAlignment = Alignment.CenterHorizontally) {
+                // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row left-aligned ----
+                Column(
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 110.dp),
+                    horizontalAlignment = Alignment.Start,
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SeatAvatar(R.drawable.avatar_liubei)
                         Spacer(Modifier.width(4.dp))
                         Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                         repeat(minOf(game.hands[3].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
                     }
-                    OpponentDiscardRow(game.discards[3])
+                    OpponentDiscardRows(game.discards[3], alignment = Alignment.Start)
                 }
-                // ---- Right seat 1 (孙权): avatar+name above, vertical hand, discards below ----
-                Column(modifier = Modifier.align(Alignment.CenterEnd), horizontalAlignment = Alignment.CenterHorizontally) {
+                // ---- Right seat 1 (孙权): top-anchored (avatar never moves), discards multi-row right-aligned ----
+                Column(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 110.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SeatAvatar(R.drawable.avatar_sunquan)
                         Spacer(Modifier.width(4.dp))
                         Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy((-3).dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                         repeat(minOf(game.hands[1].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
                     }
-                    OpponentDiscardRow(game.discards[1])
+                    OpponentDiscardRows(game.discards[1], alignment = Alignment.End)
                 }
             }
             } // key(tick)
@@ -274,55 +279,68 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's own discards: fixed-height slot just above the hand (wall never shifts)
+            // Player's own discards: fixed-height slot (2 rows) just above the hand; wall never shifts
             key(tick) {
-                Box(modifier = Modifier.fillMaxWidth().height(32.dp), contentAlignment = Alignment.BottomCenter) {
-                    Row(horizontalArrangement = Arrangement.Center) {
-                        OpponentDiscardRow(game.discards[0])
-                    }
+                Box(modifier = Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.BottomCenter) {
+                    OpponentDiscardRows(game.discards[0], perRow = 10)
                 }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: all tiles sorted together (drawn tile sorts into place,
-            // winds stay grouped: 东南西北), no right-side separation
+            // Player hand: all tiles sorted; the just-drawn tile is marked (gold border + ▼)
             key(tick) {
+                val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
                 val hand = game.hands[0].sortedBy { it.groupKey() }
+                var marked = false
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(56.dp),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(62.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     hand.forEach { t ->
-                        TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
+                        val isDrawn = drawn != null && !marked && t == drawn
+                        if (isDrawn) marked = true
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = if (isDrawn) {
+                                    Modifier.border(2.dp, Color(0xFFF6C453), RoundedCornerShape(4.dp))
+                                } else Modifier,
+                            ) {
+                                TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
+                            }
+                            if (isDrawn) {
+                                Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Win fan dialog
-    if (showFanDialog && game.winner >= 0) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xCC000000)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
-                Column(modifier = Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (game.winner == 0) "🎉 你胡了！" else "😊 ${seatName(game.winner)} 胡了", fontSize = 22.sp)
-                    Spacer(Modifier.height(8.dp))
-                    if (game.winner == 0) {
-                        game.winFans.forEach { f -> Text("${f.name}  ${f.fan}番", fontSize = 15.sp) }
-                        Spacer(Modifier.height(6.dp))
-                        Text("共 ${FanCalculator.total(game.winFans)} 番", fontSize = 20.sp, color = Color(0xFFB23A3A))
-                    } else {
-                        Text("${seatName(game.winner)} 和牌，继续加油！", fontSize = 15.sp)
+        // Win fan dialog: INSIDE the main Box so it overlaps the table (a sibling
+        // in the shell Column would be stacked below the screen and never show)
+        if (showFanDialog && game.winner >= 0) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color(0xCC000000)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
+                    Column(modifier = Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (game.winner == 0) "🎉 你胡了！" else "😊 ${seatName(game.winner)} 胡了", fontSize = 22.sp)
+                        Spacer(Modifier.height(8.dp))
+                        if (game.winner == 0) {
+                            game.winFans.forEach { f -> Text("${f.name}  ${f.fan}番", fontSize = 15.sp) }
+                            Spacer(Modifier.height(6.dp))
+                            Text("共 ${FanCalculator.total(game.winFans)} 番", fontSize = 20.sp, color = Color(0xFFB23A3A))
+                        } else {
+                            Text("${seatName(game.winner)} 和牌，继续加油！", fontSize = 15.sp)
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        ElderButton(text = "再来一局", onClick = { game.newRound(); showFanDialog = false; refresh() }, modifier = Modifier.fillMaxWidth())
+                        Spacer(Modifier.height(8.dp))
+                        ElderButton(text = "退出", onClick = onBack, modifier = Modifier.fillMaxWidth(),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
                     }
-                    Spacer(Modifier.height(20.dp))
-                    ElderButton(text = "再来一局", onClick = { game.newRound(); showFanDialog = false; refresh() }, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(8.dp))
-                    ElderButton(text = "退出", onClick = onBack, modifier = Modifier.fillMaxWidth(),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
                 }
             }
         }
@@ -333,20 +351,24 @@ fun MahjongScreen(
     }
 }
 
-/** 弃牌行：全部显示（牌多时缩小）；最新一张略大 = 刚出的牌 */
+/** 弃牌多行显示：每行最多 perRow 张（牌不缩太小），全部显示；最新一张略大 */
 @Composable
-private fun OpponentDiscardRow(discards: List<Tile>, modifier: Modifier = Modifier) {
+private fun OpponentDiscardRows(
+    discards: List<Tile>,
+    perRow: Int = 8,
+    alignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    modifier: Modifier = Modifier,
+) {
     if (discards.isEmpty()) return
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
-        val n = discards.size
-        discards.forEachIndexed { i, t ->
-            val last = i == n - 1
-            val (w, h) = if (n > 10) {
-                if (last) 13.dp to 18.dp else 10.dp to 14.dp
-            } else {
-                if (last) 18.dp to 26.dp else 14.dp to 20.dp
+    Column(modifier = modifier, horizontalAlignment = alignment) {
+        val chunks = discards.chunked(perRow)
+        chunks.forEachIndexed { ci, chunk ->
+            Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
+                chunk.forEachIndexed { i, t ->
+                    val last = ci == chunks.lastIndex && i == chunk.lastIndex
+                    TileFace(t, Modifier.size(if (last) 18.dp else 14.dp, if (last) 26.dp else 20.dp))
+                }
             }
-            TileFace(t, Modifier.size(w, h))
         }
     }
 }

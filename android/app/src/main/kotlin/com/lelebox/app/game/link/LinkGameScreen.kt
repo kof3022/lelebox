@@ -1,5 +1,6 @@
 package com.lelebox.app.game.link
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,6 +54,8 @@ fun LinkGameScreen(
     modifier: Modifier = Modifier,
 ) {
     var level by remember { mutableStateOf<LinkLevel?>(null) }
+    // 物理返回键：对局页 → 难度页 →（难度页交给壳退出）
+    if (level != null) BackHandler { level = null }
     when (val lv = level) {
         null -> LinkLevelSelect(onStart = { level = it }, modifier = modifier)
         else -> LinkBoard(lv, onBackToLevels = { level = null }, modifier = modifier)
@@ -233,8 +236,19 @@ private fun LinkBoard(
             Spacer(Modifier.height(12.dp))
             Text("全部消完！你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
             Spacer(Modifier.height(10.dp))
+            // 星级互动：没用提示星最多
+            val stars = if (hintCount == 0) 3 else if (hintCount <= 2) 2 else 1
             Text(
-                if (hintCount > 0) "用了 $hintCount 次提示" else "没有用提示，全凭自己！",
+                "⭐".repeat(stars) + "☆".repeat(3 - stars),
+                fontSize = 40.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when (stars) {
+                    3 -> "没有用提示，全凭自己！"
+                    2 -> "真棒！只用了 $hintCount 次提示"
+                    else -> "消完啦！用了 $hintCount 次提示，慢慢来没关系"
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFFFFE0B2),
                 textAlign = TextAlign.Center,

@@ -85,7 +85,7 @@ fun SettingsScreen(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            "乐龄游戏盒 v0.5.4-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
+            "乐龄游戏盒 v0.5.5-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

@@ -272,6 +272,13 @@ fun Game2048Screen(
                 color = Color.White,
             )
             Spacer(Modifier.height(10.dp))
+            // 星级互动：按本局得分
+            val stars = if (score >= 2048) 3 else if (score >= 1024) 2 else 1
+            Text(
+                "⭐".repeat(stars) + "☆".repeat(3 - stars),
+                fontSize = 40.sp,
+            )
+            Spacer(Modifier.height(10.dp))
             Text(
                 encouragement,
                 style = MaterialTheme.typography.bodyLarge,

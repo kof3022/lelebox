@@ -1,5 +1,6 @@
 package com.lelebox.app.game.spot
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -55,6 +56,13 @@ fun SpotGameScreen(
 ) {
     var difficulty by remember { mutableStateOf<SpotLevel?>(null) }
     var stage by remember { mutableIntStateOf(-1) } // -1 = 选关
+
+    // 物理返回键：对局页 → 选关页 → 难度页 →（难度页交给壳退出）
+    if (difficulty != null) {
+        BackHandler {
+            if (stage >= 0) stage = -1 else difficulty = null
+        }
+    }
 
     val lv = difficulty
     when {

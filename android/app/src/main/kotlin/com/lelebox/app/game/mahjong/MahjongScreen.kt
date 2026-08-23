@@ -104,6 +104,14 @@ fun MahjongScreen(
         refresh()
     }
 
+    /** 放弃碰/杠/和：手动摸牌 */
+    fun onDraw() {
+        if (game.hasDrawn || game.winner >= 0 || game.exhausted) return
+        game.draw(0)
+        if (game.canWin(0)) Sfx.success(context)
+        refresh()
+    }
+
     fun onSelfWin() {
         if (game.selfWin(0)) { Sfx.success(context); showFanDialog = true; refresh() }
     }
@@ -126,18 +134,21 @@ fun MahjongScreen(
         }
     }
 
-    // Auto draw for the player (no draw button). Long grace period when the player
-    // could pung/kong/win on the last discard, so they have time to see and tap.
+    // Auto draw for the player (no draw button in normal play). If the player can
+    // pung/kong/win on the last discard, NO timeout: buttons stay until they decide
+    // (tap the action or 「摸牌」 to decline). Otherwise auto-draw quickly.
     LaunchedEffect(tick) {
         if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
             val d = game.lastDiscard
             val pending = d != null && (game.canPung(0) || game.canKong(0) ||
                 Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty())
-            delay(if (pending) 6000 else 300)
-            if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
-                game.draw(0)
-                if (game.canWin(0)) Sfx.success(context)
-                refresh()
+            if (!pending) {
+                delay(300)
+                if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn) {
+                    game.draw(0)
+                    if (game.canWin(0)) Sfx.success(context)
+                    refresh()
+                }
             }
         }
     }
@@ -234,32 +245,41 @@ fun MahjongScreen(
             }
             } // key(tick)
 
-            // Action buttons (draw is automatic; only win/pung/kong/ankang)
+            // Action buttons (draw is automatic; only win/pung/kong/ankang).
+            // Fixed-height slot: buttons appearing/disappearing never move the wall.
             key(tick) {
+                Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (game.winner < 0 && !game.exhausted && game.current == 0) {
-                        if (game.hasDrawn && game.canWin(0)) {
-                            ElderButton(
-                                text = "和牌", onClick = ::onSelfWin, modifier = Modifier.weight(1f), minHeight = 44.dp,
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
-                            )
-                        }
                         if (canPungNow) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
                         if (canKongNow) ElderButton(text = "杠", onClick = ::onKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
                         if (canWinNow) ElderButton(
                             text = "和", onClick = ::onWinByDiscard, modifier = Modifier.weight(1f), minHeight = 44.dp,
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
                         )
+                        // 有可操作项时无超时等待；「摸牌」= 放弃操作直接摸牌
+                        if ((canPungNow || canKongNow || canWinNow) && !game.hasDrawn) {
+                            ElderButton(text = "摸牌", onClick = ::onDraw, modifier = Modifier.weight(1f), minHeight = 44.dp)
+                        }
+                        if (game.hasDrawn && game.canWin(0)) {
+                            ElderButton(
+                                text = "和牌", onClick = ::onSelfWin, modifier = Modifier.weight(1f), minHeight = 44.dp,
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
+                            )
+                        }
                         if (game.hasDrawn && game.canConcealedKong(0)) ElderButton(text = "暗杠", onClick = ::onConcealedKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
                     }
+                }
                 }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's own discards, just above the hand (close, not far away)
+            // Player's own discards: fixed-height slot just above the hand (wall never shifts)
             key(tick) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    OpponentDiscardRow(game.discards[0])
+                Box(modifier = Modifier.fillMaxWidth().height(32.dp), contentAlignment = Alignment.BottomCenter) {
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        OpponentDiscardRow(game.discards[0])
+                    }
                 }
             }
             Spacer(Modifier.height(2.dp))

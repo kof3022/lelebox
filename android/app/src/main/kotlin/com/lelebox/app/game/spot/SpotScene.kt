@@ -436,10 +436,18 @@ private fun DrawScope.drawSnow(variant: Boolean) {
         rect(Color(0xFF8A5A2B), 730f, 830f, 890f, 845f)
     }
     if (!variant) {
+        // 彩色雪人：白身 + 黑帽 + 橙鼻子 + 红围巾 + 黑眼睛/纽扣（在雪地里清晰可见）
         circle(Color.White, 330f, 740f, 80f)
         circle(Color.White, 330f, 640f, 55f)
-        rect(Color(0xFF2E2A25), 320f, 670f, 340f, 680f)
-        rect(Color(0xFF2E2A25), 320f, 700f, 340f, 710f)
+        rect(Color(0xFF2E2A25), 300f, 560f, 360f, 598f)   // 帽筒
+        rect(Color(0xFF2E2A25), 286f, 592f, 374f, 610f)   // 帽檐
+        circle(Color(0xFF2E2A25), 312f, 626f, 8f)         // 左眼
+        circle(Color(0xFF2E2A25), 348f, 626f, 8f)         // 右眼
+        circle(Color(0xFFF08A3C), 336f, 646f, 9f)         // 胡萝卜鼻子
+        circle(Color(0xFFF08A3C), 347f, 650f, 7f)
+        rect(Color(0xFFD94F3D), 296f, 668f, 364f, 690f)   // 红围巾
+        circle(Color(0xFF2E2A25), 330f, 716f, 8f)         // 纽扣
+        circle(Color(0xFF2E2A25), 330f, 758f, 8f)
     }
 }
 

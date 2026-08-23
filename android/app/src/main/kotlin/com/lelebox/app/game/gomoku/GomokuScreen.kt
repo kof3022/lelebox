@@ -1,6 +1,7 @@
 package com.lelebox.app.game.gomoku
 
 import android.content.SharedPreferences
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,6 +54,8 @@ fun GomokuScreen(
     modifier: Modifier = Modifier,
 ) {
     var level by remember { mutableStateOf<GomokuLevel?>(null) }
+    // 物理返回键：对局页 → 难度页 →（难度页交给壳退出）
+    if (level != null) BackHandler { level = null }
     when (val lv = level) {
         null -> GomokuLevelSelect(onStart = { level = it }, modifier = modifier)
         else -> GomokuBoard(lv, onBackToLevels = { level = null }, modifier = modifier)
@@ -267,6 +270,27 @@ private fun GomokuBoard(
                 if (game.winner == BLACK) "你赢啦！五子连珠！" else if (game.winner == WHITE) "电脑赢啦，再接再厉！" else "平局，棋逢对手！",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(10.dp))
+            // 用户互动：步数 + 星级（赢得越利落星越多）
+            val moves = history.size
+            val stars = if (game.winner == BLACK) {
+                if (moves <= 15) 3 else if (moves <= 27) 2 else 1
+            } else 1
+            Text(
+                "⭐".repeat(stars) + "☆".repeat(3 - stars),
+                fontSize = 40.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when {
+                    game.winner == BLACK -> "你用了 $moves 步就赢啦！"
+                    game.winner == WHITE -> "电脑赢啦，下次加油！"
+                    else -> "平局！棋逢对手"
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFFFFE0B2),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(32.dp))

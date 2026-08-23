@@ -1,6 +1,7 @@
 package com.lelebox.app.game.sudoku
 
 import android.content.SharedPreferences
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -59,6 +60,8 @@ fun SudokuScreen(
     modifier: Modifier = Modifier,
 ) {
     var level by remember { mutableStateOf<SudokuLevel?>(null) }
+    // 物理返回键：对局页 → 难度页 →（难度页交给壳退出）
+    if (level != null) BackHandler { level = null }
     when (val lv = level) {
         null -> SudokuLevelSelect(onStart = { level = it }, modifier = modifier)
         else -> SudokuBoard(lv, prefs, onBackToLevels = { level = null }, modifier = modifier)
@@ -128,10 +131,13 @@ private fun SudokuBoard(
     var candidateMode by remember { mutableStateOf(false) }
     var cands by remember { mutableStateOf<Map<Int, Set<Int>>>(emptyMap()) }
     var hintCount by remember { mutableIntStateOf(0) }
+    // 「填满但有错」提示只弹一次，点「继续修改」后收起
+    var errorNotice by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val errors = current.indices.filter { current[it] != 0 && current[it] != solved[it] }.toSet()
     val won = current.all { it != 0 } && errors.isEmpty()
+    val fullWithErrors = current.all { it != 0 } && !won
 
     // 完成音效
     LaunchedEffect(won) {
@@ -155,6 +161,7 @@ private fun SudokuBoard(
         selected = null
         cands = emptyMap()
         hintCount = 0
+        errorNotice = false
         round++
     }
 
@@ -341,8 +348,19 @@ private fun SudokuBoard(
             Spacer(Modifier.height(12.dp))
             Text("完成！你真棒！", style = MaterialTheme.typography.headlineMedium, color = Color.White)
             Spacer(Modifier.height(10.dp))
+            // 星级互动：提示用得越少星越多
+            val stars = if (hintCount == 0) 3 else if (hintCount <= 3) 2 else 1
             Text(
-                if (hintCount > 0) "用了 $hintCount 次提示，慢慢想也完成了" else "没有用提示，全部自己完成！",
+                "⭐".repeat(stars) + "☆".repeat(3 - stars),
+                fontSize = 40.sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                when (stars) {
+                    3 -> "没有用提示，全部自己完成！"
+                    2 -> "真棒！只用了 $hintCount 次提示"
+                    else -> "完成啦！用了 $hintCount 次提示，慢慢想也完成了"
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFFFFE0B2),
                 textAlign = TextAlign.Center,
@@ -358,6 +376,43 @@ private fun SudokuBoard(
             ElderButton(text = "再来一局", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(12.dp))
             ElderButton(text = "换难度", onClick = onBackToLevels, modifier = Modifier.fillMaxWidth())
+        }
+    }
+
+    // 填满但有错：不能直接判定结束，给用户明确的互动（继续修改 / 重来）
+    if (fullWithErrors && !errorNotice) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xCC000000))
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("🧐", fontSize = 64.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("有格子填错了", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "别着急，红色格子就是填错的地方，改过来就能完成啦",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFFFFE0B2),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(32.dp))
+            ElderButton(text = "继续修改", onClick = { errorNotice = true }, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            ElderButton(text = "重新开始", onClick = ::newGame, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(12.dp))
+            ElderButton(
+                text = "换难度",
+                onClick = onBackToLevels,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            )
         }
     }
 }

@@ -414,11 +414,11 @@ private val SNOW_DIFFS = listOf(
     SpotDiff(Rect(720f, 790f, 900f, 855f), "雪橇"),
     SpotDiff(Rect(60f, 80f, 260f, 220f), "星星"),
     SpotDiff(Rect(630f, 150f, 710f, 270f), "烟囱冒烟"),
-    SpotDiff(Rect(790f, 350f, 890f, 450f), "树上的雪"),
+    SpotDiff(Rect(790f, 350f, 890f, 470f), "红灯笼"),
     SpotDiff(Rect(300f, 80f, 420f, 200f), "月亮颜色"),
 )
 
-/** 雪景：只画差异小元素（月亮色 / 星星 / 屋顶雪 / 烟囱烟 / 树雪 / 雪橇 / 雪人） */
+/** 雪景：只画差异小元素（月亮色 / 星星 / 屋顶雪 / 烟囱烟 / 红灯笼 / 雪橇 / 雪人） */
 private fun DrawScope.drawSnow(variant: Boolean) {
     circle(if (variant) Color(0xFFE8E0C8) else Color(0xFFF6C453), 360f, 140f, 55f) // 月亮
     for (i in 0 until 3) {
@@ -430,7 +430,14 @@ private fun DrawScope.drawSnow(variant: Boolean) {
         rect(Color(0xFFB9B9B9), 640f, 180f, 700f, 260f) // 烟
         circle(Color(0xFFB9B9B9), 670f, 160f, 24f)
     }
-    if (!variant) circle(Color.White, 840f, 400f, 40f) // 树上的雪
+    if (!variant) {
+        // 红灯笼（原"树上的雪"白圈落在雪地里看不见，改红灯笼清晰醒目）
+        line(Color(0xFF5A3A22), 840f, 345f, 840f, 372f, 4f)      // 挂绳
+        rect(Color(0xFF8A5A2B), 826f, 372f, 854f, 384f)          // 顶盖
+        circle(Color(0xFFE85D5D), 840f, 415f, 34f)                // 红色灯身
+        rect(Color(0xFFF6C453), 814f, 405f, 866f, 425f)           // 金色横纹
+        circle(Color(0xFFE85D5D), 840f, 452f, 10f)                // 底穗
+    }
     if (!variant) {
         // 红色雪橇：亮红座椅 + 深棕滑板，在雪地里清晰可见
         rect(Color(0xFFE85D5D), 720f, 785f, 900f, 822f)   // 座椅

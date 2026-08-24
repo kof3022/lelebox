@@ -24,6 +24,8 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
     var lastDiscardPlayer = -1
     /** player has drawn (14 tiles in hand) */
     var hasDrawn = false
+    /** after pung/chow the player discards directly without drawing */
+    var mustDiscard = false
     /** all walls exhausted */
     var exhausted = false
     /** dice values (1..6 each) */
@@ -60,6 +62,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         lastDiscard = null
         lastDiscardPlayer = -1
         hasDrawn = false
+        mustDiscard = false
         exhausted = false
         winner = -1
         winScheme = null
@@ -91,6 +94,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         lastDiscardPlayer = p
         discards[p].add(tile)
         if (p == 0) hasDrawn = false
+        if (p == 0) mustDiscard = false
         current = (p + 1) % 4
         return true
     }
@@ -140,6 +144,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         concealed[0] = false
         lastDiscard = null
         hasDrawn = false
+        mustDiscard = true // 吃后直接弃牌，不抓牌
         current = 0
         return true
     }
@@ -163,6 +168,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         lastDiscard = null
         current = p
         hasDrawn = false
+        if (p == 0) mustDiscard = true // 碰后直接弃牌，不抓牌
         return true
     }
 

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -231,11 +230,15 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    // 曹操：明刻在弃牌右侧（固定、留少许间隔）
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2, highlightColor = hlColor)
-                        Spacer(Modifier.width(8.dp))
-                        MeldGroup(game.exposed[2])
+                    // 曹操：弃牌居中于正中间，明刻固定在右侧
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OpponentDiscardRows(
+                            game.discards[2],
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            highlight = pendingAction && game.lastDiscardPlayer == 2,
+                            highlightColor = hlColor,
+                        )
+                        MeldGroup(game.exposed[2], modifier = Modifier.align(Alignment.CenterEnd))
                     }
                 }
                 // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row ----
@@ -313,13 +316,9 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's exposed melds (LEFT of discards, fixed) + own discards (8/row)
+            // Player's exposed melds: fixed position at the LEFT
             key(tick) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.Bottom,
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                     if (game.exposed[0].isNotEmpty()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
                             game.exposed[0].forEach { meld ->
@@ -331,15 +330,21 @@ fun MahjongScreen(
                                 }
                             }
                         }
-                        Spacer(Modifier.width(8.dp))
                     }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+
+            // Player's own discards: centered, directly above the hand (8/row)
+            key(tick) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     OpponentDiscardRows(game.discards[0], perRow = 8)
                 }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: all tiles sorted; the just-drawn tile stands out
-            // (gold border + ▼ below, slightly raised) — previous style.
+            // Player hand: all tiles sorted; the just-drawn tile stands out — RAISED
+            // (taller tile + ▼ below, gold border fits the tile exactly).
             key(tick) {
                 val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
                 val hand = game.hands[0].sortedBy { it.groupKey() }
@@ -355,20 +360,20 @@ fun MahjongScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 modifier = if (isDrawn) {
-                                    Modifier.border(2.dp, Color(0xFFF6C453), RoundedCornerShape(4.dp))
+                                    Modifier.border(3.dp, Color(0xFFF6C453), RoundedCornerShape(4.dp))
                                 } else Modifier,
                             ) {
                                 TileFace(
                                     t,
                                     if (isDrawn) {
-                                        Modifier.size(32.dp, 46.dp).offset(y = (-6).dp).clickable { onDiscard(t) }
+                                        Modifier.size(32.dp, 46.dp).clickable { onDiscard(t) }
                                     } else {
                                         Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) }
                                     },
                                 )
                             }
                             if (isDrawn) {
-                                Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
+                                Text("▼", fontSize = 11.sp, color = Color(0xFFF6C453))
                             }
                         }
                     }
@@ -532,12 +537,15 @@ private fun TileBack(modifier: Modifier = Modifier) {
     }
 }
 
-/** Map Tile to drawable resource */
+/** Map Tile to drawable resource.
+ *  Note: lietxia/mahjong_graphic is a RIICHI set, honor order 东南西北白发中:
+ *  mj_3_5=白 mj_3_6=发 mj_3_7=中 (so dragon mapping is 中→7 发→6 白→5). */
 fun tileRes(tile: Tile): Int = when {
     tile.suit == 0 -> when (tile.rank) { 1 -> R.drawable.mj_0_1; 2 -> R.drawable.mj_0_2; 3 -> R.drawable.mj_0_3; 4 -> R.drawable.mj_0_4; 5 -> R.drawable.mj_0_5; 6 -> R.drawable.mj_0_6; 7 -> R.drawable.mj_0_7; 8 -> R.drawable.mj_0_8; else -> R.drawable.mj_0_9 }
     tile.suit == 1 -> when (tile.rank) { 1 -> R.drawable.mj_1_1; 2 -> R.drawable.mj_1_2; 3 -> R.drawable.mj_1_3; 4 -> R.drawable.mj_1_4; 5 -> R.drawable.mj_1_5; 6 -> R.drawable.mj_1_6; 7 -> R.drawable.mj_1_7; 8 -> R.drawable.mj_1_8; else -> R.drawable.mj_1_9 }
     tile.suit == 2 -> when (tile.rank) { 1 -> R.drawable.mj_2_1; 2 -> R.drawable.mj_2_2; 3 -> R.drawable.mj_2_3; 4 -> R.drawable.mj_2_4; 5 -> R.drawable.mj_2_5; 6 -> R.drawable.mj_2_6; 7 -> R.drawable.mj_2_7; 8 -> R.drawable.mj_2_8; else -> R.drawable.mj_2_9 }
-    else -> when (tile.rank) { 1 -> R.drawable.mj_3_1; 2 -> R.drawable.mj_3_2; 3 -> R.drawable.mj_3_3; 4 -> R.drawable.mj_3_4; 5 -> R.drawable.mj_3_5; 6 -> R.drawable.mj_3_6; else -> R.drawable.mj_3_7 }
+    tile.suit == 3 -> when (tile.rank) { 1 -> R.drawable.mj_3_1; 2 -> R.drawable.mj_3_2; 3 -> R.drawable.mj_3_3; 4 -> R.drawable.mj_3_4; else -> R.drawable.mj_3_4 }
+    else -> when (tile.rank) { 1 -> R.drawable.mj_3_7; 2 -> R.drawable.mj_3_6; else -> R.drawable.mj_3_5 }
 }
 
 private fun Context.findActivity(): Activity? {

@@ -61,8 +61,8 @@ fun PaiJiuScreen(
     val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
     val game = remember { PaiJiuGame() }
     var tick by remember { mutableIntStateOf(0) }
-    // 玩家当前选中的牌（领出 1 张 / 接牌 1 张）
-    var selected by remember { mutableStateOf<PaiJiuTile?>(null) }
+    // 玩家当前选中的牌（用索引，避免同值牌（对象引用相同）无法区分/误取消选中）
+    var selectedIdx by remember { mutableIntStateOf(-1) }
     var autoPass by remember { mutableStateOf(false) }
     val difficulty = PaiJiuDifficulty.MEDIUM
 
@@ -88,15 +88,20 @@ fun PaiJiuScreen(
 
     fun seatName(p: Int): String = when (p) { 0 -> "你"; 1 -> "孙权"; 2 -> "曹操"; 3 -> "刘备"; else -> "?" }
 
-    /** 玩家出牌 */
-    fun playerPlay(tiles: List<PaiJiuTile>) {
-        if (game.play(0, tiles)) { Sfx.click(context); selected = null; refresh() }
+    /** 玩家出牌（按选中索引取牌） */
+    fun playerPlay() {
+        val hand = game.hands[0].sortedBy { it.rank.order }
+        if (selectedIdx in hand.indices) {
+            if (game.play(0, listOf(hand[selectedIdx]))) {
+                Sfx.click(context); selectedIdx = -1; refresh()
+            }
+        }
     }
 
-    /** 玩家垫牌：自动垫最小价值牌 */
+    /** 玩家垫牌：自动垫最小价值牌（垫牌不明牌，牌背显示） */
     fun playerPass() {
         val t = PaiJiuAi.choosePass(game.hands[0], difficulty)
-        if (game.pass(0, t)) { Sfx.click(context); selected = null; refresh() }
+        if (game.pass(0, t)) { Sfx.click(context); selectedIdx = -1; refresh() }
     }
 
     // AI 回合循环：单个常驻协程按 current 推进（不再依赖 tick 重启，
@@ -122,6 +127,13 @@ fun PaiJiuScreen(
     }
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF2C4A3B))) {
+        // 桌面背景（复用麻将牌桌图片）
+        Image(
+            painter = painterResource(R.drawable.mj_table),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
         key(tick) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // 三家电脑：位置参考麻将（曹操顶部居中、刘备左上、孙权右上），带头像
@@ -139,6 +151,13 @@ fun PaiJiuScreen(
                     // 牌背
                     Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(game.hands[2].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
+                    }
+                    // 垫牌记录（牌背，不明牌）
+                    if (game.passCount[2] > 0) {
+                        Spacer(Modifier.height(2.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
+                            repeat(game.passCount[2]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
+                        }
                     }
                 }
                 // 刘备 seat 3：左上
@@ -158,6 +177,13 @@ fun PaiJiuScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(game.hands[3].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
                     }
+                    // 垫牌记录（牌背，不明牌）
+                    if (game.passCount[3] > 0) {
+                        Spacer(Modifier.height(2.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
+                            repeat(game.passCount[3]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
+                        }
+                    }
                 }
                 // 孙权 seat 1：右上
                 Column(
@@ -175,6 +201,13 @@ fun PaiJiuScreen(
                     Spacer(Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(game.hands[1].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
+                    }
+                    // 垫牌记录（牌背，不明牌）
+                    if (game.passCount[1] > 0) {
+                        Spacer(Modifier.height(2.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
+                            repeat(game.passCount[1]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
+                        }
                     }
                 }
                 // 中央：当前桌面牌 + 本轮状态
@@ -224,8 +257,8 @@ fun PaiJiuScreen(
             key(tick) {
                 PlayerHandArea(
                     game = game,
-                    selected = selected,
-                    onSelect = { t -> selected = if (selected == t) null else t },
+                    selectedIdx = selectedIdx,
+                    onSelect = { idx -> selectedIdx = if (selectedIdx == idx) -1 else idx },
                     onPlay = ::playerPlay,
                     onPass = ::playerPass,
                 )
@@ -256,7 +289,7 @@ fun PaiJiuScreen(
                         Text("第${idx + 1}名：${seatName(p)}", fontSize = 15.sp, color = Color(0xFF6E6A63))
                     }
                     Spacer(Modifier.height(14.dp))
-                    ElderButton(text = "再来一局", onClick = { game.newRound(); selected = null; refresh() }, minHeight = 44.dp)
+                    ElderButton(text = "再来一局", onClick = { game.newRound(); selectedIdx = -1; refresh() }, minHeight = 44.dp)
                     Spacer(Modifier.height(6.dp))
                     ElderButton(text = "退出", onClick = onBack, minHeight = 44.dp,
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -290,9 +323,9 @@ private fun SeatAvatar(res: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun PlayerHandArea(
     game: PaiJiuGame,
-    selected: PaiJiuTile?,
-    onSelect: (PaiJiuTile) -> Unit,
-    onPlay: (List<PaiJiuTile>) -> Unit,
+    selectedIdx: Int,
+    onSelect: (Int) -> Unit,
+    onPlay: () -> Unit,
     onPass: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
@@ -308,14 +341,14 @@ private fun PlayerHandArea(
                 Text("${if (game.isLeadPhase) "${seatName2(game.leader)} 领出中…" else "等待接牌…"}",
                     fontSize = 14.sp, color = Color(0xFFE8F0E4))
             } else if (game.isLeadPhase) {
-                if (selected != null) {
-                    ElderButton(text = "出牌", onClick = { onPlay(listOf(selected!!)) }, minHeight = 44.dp)
+                if (selectedIdx >= 0) {
+                    ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
                 } else {
                     Text("选一张牌出（先出牌的人）", fontSize = 14.sp, color = Color(0xFFE8F0E4))
                 }
             } else {
-                if (selected != null) {
-                    ElderButton(text = "出牌", onClick = { onPlay(listOf(selected!!)) }, minHeight = 44.dp)
+                if (selectedIdx >= 0) {
+                    ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
                     Spacer(Modifier.width(8.dp))
                 }
                 ElderButton(text = "过（垫牌）", onClick = onPass, minHeight = 44.dp,
@@ -331,8 +364,9 @@ private fun PlayerHandArea(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom,
         ) {
-            game.hands[0].sortedBy { it.rank.order }.forEach { t ->
-                val isSelected = selected == t
+            val sorted = game.hands[0].sortedBy { it.rank.order }
+            sorted.forEachIndexed { idx, t ->
+                val isSelected = idx == selectedIdx
                 val canUse = game.current == 0 && !game.gameOver && (
                     game.isLeadPhase || PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!).any { it.tiles.contains(t) }
                     )
@@ -344,10 +378,22 @@ private fun PlayerHandArea(
                             else if (canUse) Modifier.border(2.dp, Color(0xFF8BC34A), RoundedCornerShape(6.dp))
                             else Modifier
                         )
-                        .clickable(enabled = game.current == 0 && !game.gameOver) { onSelect(t) },
+                        .clickable(enabled = game.current == 0 && !game.gameOver) { onSelect(idx) },
                 ) {
                     PaiJiuTileFace(t, Modifier.size(PaiJiuTileWidth, PaiJiuTileHeight))
                 }
+            }
+        }
+        // 垫牌记录：牌背标记（垫牌不明牌）
+        if (game.passCount[0] > 0) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("已垫牌 ", fontSize = 12.sp, color = Color(0xFFE8F0E4))
+                repeat(game.passCount[0]) { PaiJiuTileBack(Modifier.size(14.dp, 20.dp)) }
             }
         }
     }

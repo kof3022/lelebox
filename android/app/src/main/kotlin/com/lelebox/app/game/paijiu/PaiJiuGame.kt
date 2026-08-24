@@ -35,6 +35,9 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
     /** 本轮已行动者（出牌或垫牌），每人至多一次 */
     private val acted = BooleanArray(4)
 
+    /** 各家累计垫牌数（UI 显示牌背标记，不明牌） */
+    val passCount = IntArray(4)
+
     /** 结牌顺序（先出完的在前） */
     val finished = mutableListOf<Int>()
 
@@ -57,6 +60,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         currentPlay = null
         currentPlayPlayer = -1
         acted.fill(false)
+        passCount.fill(0)
         finished.clear()
         gameOver = false
         winner = -1
@@ -111,6 +115,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         if (acted[p]) return false
         if (!hands[p].remove(tile)) return false
         acted[p] = true
+        passCount[p]++
         checkFinish(p)
         advance()
         return true

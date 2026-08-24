@@ -8,6 +8,7 @@ import com.lelebox.app.ui.GameGomoku
 import com.lelebox.app.ui.GameLink
 import com.lelebox.app.ui.GameMahjong
 import com.lelebox.app.ui.GameMemory
+import com.lelebox.app.ui.GamePaiJiu
 import com.lelebox.app.ui.GameSpot
 import com.lelebox.app.ui.GameSudoku
 
@@ -50,6 +51,15 @@ object Games {
             kind = GameKind.NATIVE,
             emoji = "🀄",
             accent = GameMahjong,
+        ),
+        GameEntry(
+            id = "paijiu",
+            title = "牌九",
+            subtitle = "打天九，谁先出完谁赢",
+            help = "你和孙权、曹操、刘备打天九。每人 8 张骨牌，你先出一张，别人用更大的同类型牌接，接不住就垫一张。谁先把手里的牌出完谁就赢。点牌选中，再点「出牌」；接不住就点「过」。",
+            kind = GameKind.NATIVE,
+            emoji = "🀫",
+            accent = GamePaiJiu,
         ),
         GameEntry(
             id = "memory",

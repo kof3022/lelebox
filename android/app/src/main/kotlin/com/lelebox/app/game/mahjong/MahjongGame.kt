@@ -26,6 +26,8 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
     var hasDrawn = false
     /** after pung/chow the player discards directly without drawing */
     var mustDiscard = false
+    /** 响应阶段：某家出牌后，其余三家按序声明和/杠/碰；全部放弃后才轮到下家摸牌 */
+    var respondStage = false
     /** all walls exhausted */
     var exhausted = false
     /** dice values (1..6 each) */
@@ -63,6 +65,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         lastDiscardPlayer = -1
         hasDrawn = false
         mustDiscard = false
+        respondStage = false
         exhausted = false
         winner = -1
         winScheme = null
@@ -87,7 +90,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return false
     }
 
-    /** Discard a tile; record into history */
+    /** Discard a tile; record into history. 出牌后进入响应阶段（三家按序声明和/杠/碰） */
     fun discard(p: Int, tile: Tile): Boolean {
         if (!hands[p].remove(tile)) return false
         lastDiscard = tile
@@ -96,7 +99,19 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (p == 0) hasDrawn = false
         if (p == 0) mustDiscard = false
         current = (p + 1) % 4
+        respondStage = true
         return true
+    }
+
+    /** 当前响应者放弃声明：移到下一家；三家都放弃后响应结束，出牌者的下家摸牌 */
+    fun passRespond() {
+        if (winner >= 0 || !respondStage) return
+        current = (current + 1) % 4
+        if (current == lastDiscardPlayer) {
+            respondStage = false
+            lastDiscard = null
+            current = (lastDiscardPlayer + 1) % 4
+        }
     }
 
     fun canWin(p: Int): Boolean {
@@ -145,6 +160,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[0] = false
         lastDiscard = null
+        respondStage = false
         hasDrawn = false
         mustDiscard = true // 吃后直接弃牌，不抓牌
         current = 0
@@ -170,6 +186,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[p] = false
         lastDiscard = null
+        respondStage = false
         current = p
         hasDrawn = false
         if (p == 0) mustDiscard = true // 碰后直接弃牌，不抓牌
@@ -185,6 +202,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[p] = false
         lastDiscard = null
+        respondStage = false
         current = p
         hasDrawn = false
         draw(p)
@@ -229,7 +247,11 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** AI turn: react to the previous discard (win/pung/kong), then draw, decide, discard */
+    /**
+     * AI 回合：
+     * - 响应阶段：只声明和/杠/碰；不响应则 passRespond 交给下一家（不摸牌，弃牌留给后续家）
+     * - 非响应阶段：摸牌 → 自摸/暗杠 → 弃牌（弃牌进入新一轮响应阶段）
+     */
     fun aiTurn(p: Int) {
         if (winner >= 0 || exhausted) return
         val d = lastDiscard
@@ -249,6 +271,7 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
                 return
             }
         }
+        if (respondStage) { passRespond(); return }
         draw(p)
         if (canWin(p)) { selfWin(p); return }
         if (canConcealedKong(p)) doConcealedKong(p)

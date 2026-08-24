@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,7 +64,6 @@ fun MahjongScreen(
     val activity = remember(context) { context.findActivity() }
     val game = remember { MahjongGame() }
     var tick by remember { mutableIntStateOf(0) }
-    var showFanDialog by remember { mutableStateOf(false) }
     var canPungNow by remember { mutableStateOf(false) }
     var canKongNow by remember { mutableStateOf(false) }
     var canWinNow by remember { mutableStateOf(false) }
@@ -115,16 +115,21 @@ fun MahjongScreen(
         refresh()
     }
 
-    /** 放弃碰/杠/和：手动摸牌 */
+    /** 放弃碰/杠/和：响应阶段放弃响应（交给下一家）；非响应阶段手动摸牌 */
     fun onDraw() {
         if (game.hasDrawn || game.winner >= 0 || game.exhausted) return
+        if (game.respondStage && game.lastDiscard != null) {
+            game.passRespond()
+            refresh()
+            return
+        }
         game.draw(0)
         if (game.canWin(0)) Sfx.success(context)
         refresh()
     }
 
     fun onSelfWin() {
-        if (game.selfWin(0)) { Sfx.success(context); showFanDialog = true; refresh() }
+        if (game.selfWin(0)) { Sfx.success(context); refresh() }
     }
 
     fun onPung() { if (game.doPung(0)) { Sfx.click(context); refresh() } }
@@ -133,14 +138,23 @@ fun MahjongScreen(
 
     fun onWinByDiscard() {
         val d = game.lastDiscard ?: return
-        if (game.winByDiscard(0, d)) { Sfx.success(context); showFanDialog = true; refresh() }
+        if (game.winByDiscard(0, d)) { Sfx.success(context); refresh() }
     }
 
     // AI turn loop (seat 1..3 play while it is not the player's turn)
+    // AI 打牌音效：弃牌/碰/杠播放点击音；AI 和牌播放成功音
     LaunchedEffect(tick) {
         while (game.winner < 0 && !game.exhausted && game.current != 0) {
             delay(600)
+            val beforeDiscards = game.discards.sumOf { it.size }
+            val beforeExposed = game.exposed.sumOf { it.size }
             game.aiTurn(game.current)
+            if (game.winner >= 0) {
+                Sfx.success(context)
+            } else if (game.discards.sumOf { it.size } > beforeDiscards ||
+                game.exposed.sumOf { it.size } > beforeExposed) {
+                Sfx.click(context)
+            }
             refresh()
         }
     }
@@ -148,13 +162,16 @@ fun MahjongScreen(
     // Auto draw for the player (no draw button in normal play). If the player can
     // pung/kong/win on the last discard, NO timeout: buttons stay until they decide
     // (tap the action or 「摸牌」 to decline). Otherwise auto-draw quickly.
+    // 响应阶段：不能响应时自动 passRespond（交给下一家）；三家都放弃后下家摸牌
     // After a pung/chow the player discards directly (mustDiscard) — no draw.
     LaunchedEffect(tick) {
         if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn && !game.mustDiscard) {
             val d = game.lastDiscard
             val pending = d != null && (game.canPung(0) || game.canKong(0) ||
                 Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty())
-            if (!pending) {
+            if (game.respondStage && d != null) {
+                if (!pending) { game.passRespond(); refresh() }
+            } else if (!pending) {
                 delay(300)
                 if (game.winner < 0 && !game.exhausted && game.current == 0 && !game.hasDrawn && !game.mustDiscard) {
                     game.draw(0)
@@ -164,8 +181,6 @@ fun MahjongScreen(
             }
         }
     }
-
-    LaunchedEffect(tick) { if (game.winner >= 0) showFanDialog = true }
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF2C4A3B))) {
         // 牌桌背景（即梦生成，已压缩 drawable-xxhdpi/mj_table.jpg）
@@ -215,9 +230,20 @@ fun MahjongScreen(
                         Text("${game.walls.sumOf { it.size }}", fontSize = 18.sp, color = Color(0xFFFFE082))
                     }
                     Spacer(Modifier.height(6.dp))
-                    // 提示消息紧贴牌墙下方（流局改为全屏弹窗，见下方）
+                    // 提示消息紧贴牌墙下方：显示"正在摸打的人"。
+                    // 响应阶段（三家依次声明和/杠/碰）固定显示弃牌者，避免轮番闪动；
+                    // 玩家弃牌后显示下家（孙权，即将摸打）；非响应阶段显示当前行动者。
+                    // 向上偏移贴近牌墙，避开中圈金圈线。
                     if (game.winner < 0 && !game.exhausted && game.current != 0) {
-                        Text("电脑摸打中…", fontSize = 13.sp, color = Color(0xFFE8F0E4))
+                        val actor = if (game.respondStage) {
+                            if (game.lastDiscardPlayer == 0) (game.lastDiscardPlayer + 1) % 4 else game.lastDiscardPlayer
+                        } else game.current
+                        Text(
+                            "${seatName(actor)} 摸打中…",
+                            fontSize = 13.sp,
+                            color = Color(0xFFE8F0E4),
+                            modifier = Modifier.offset(y = (-9).dp),
+                        )
                     }
                 }
                 // ---- Top seat 2 (曹操): avatar+name fixed at top, hand backs, discards multi-row ----
@@ -227,8 +253,18 @@ fun MahjongScreen(
                         Spacer(Modifier.width(4.dp))
                         Text("曹操 ${game.hands[2].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                        repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                    if (game.winner == 2) {
+                        Text("🎉 和牌！", fontSize = 15.sp, color = Color(0xFFF6C453))
+                    }
+                    // 和牌时翻开手牌
+                    if (game.winner >= 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                            game.hands[2].sortedBy { it.groupKey() }.forEach { t -> TileFace(t, Modifier.size(12.dp, 17.dp)) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                            repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                        }
                     }
                     // 曹操：弃牌居中不变；明刻从弃牌第一排第8张右侧固定开始，多明刻向下排
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -251,8 +287,18 @@ fun MahjongScreen(
                         Spacer(Modifier.width(4.dp))
                         Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                        repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                    if (game.winner == 3) {
+                        Text("🎉 和牌！", fontSize = 15.sp, color = Color(0xFFF6C453))
+                    }
+                    // 和牌时翻开手牌
+                    if (game.winner >= 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                            game.hands[3].sortedBy { it.groupKey() }.forEach { t -> TileFace(t, Modifier.size(12.dp, 17.dp)) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                            repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                        }
                     }
                     // 刘备：弃牌不变；明刻从弃牌第一排第8张右侧开始，多明刻向下排
                     Row(verticalAlignment = Alignment.Top) {
@@ -271,8 +317,18 @@ fun MahjongScreen(
                         Spacer(Modifier.width(4.dp))
                         Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                        repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                    if (game.winner == 1) {
+                        Text("🎉 和牌！", fontSize = 15.sp, color = Color(0xFFF6C453))
+                    }
+                    // 和牌时翻开手牌
+                    if (game.winner >= 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                            game.hands[1].sortedBy { it.groupKey() }.forEach { t -> TileFace(t, Modifier.size(12.dp, 17.dp)) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                            repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                        }
                     }
                     // 孙权：弃牌不变；明刻从弃牌第一排第8张左侧开始，多明刻向下排
                     Row(verticalAlignment = Alignment.Top) {
@@ -367,53 +423,51 @@ fun MahjongScreen(
             }
         }
 
-        // Win fan dialog: INSIDE the main Box so it overlaps the table (a sibling
-        // in the shell Column would be stacked below the screen and never show)
-        if (showFanDialog && game.winner >= 0) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0xCC000000)),
-                contentAlignment = Alignment.Center,
+        // 和牌面板：桌面中央（不遮住整桌），显示和家提示/自摸/番数/按钮；无论谁和牌都结算番数
+        if (game.winner >= 0) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xEEF7F1E6),
+                modifier = Modifier.align(Alignment.Center).padding(16.dp),
             ) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
-                    Column(modifier = Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (game.winner == 0) "🎉 你胡了！" else "😊 ${seatName(game.winner)} 胡了", fontSize = 22.sp)
-                        Spacer(Modifier.height(8.dp))
-                        if (game.winner == 0) {
-                            game.winFans.forEach { f -> Text("${f.name}  ${f.fan}番", fontSize = 15.sp) }
-                            Spacer(Modifier.height(6.dp))
-                            Text("共 ${FanCalculator.total(game.winFans)} 番", fontSize = 20.sp, color = Color(0xFFB23A3A))
-                        } else {
-                            Text("${seatName(game.winner)} 和牌，继续加油！", fontSize = 15.sp)
-                        }
-                        Spacer(Modifier.height(20.dp))
-                        ElderButton(text = "再来一局", onClick = { game.newRound(); showFanDialog = false; refresh() }, modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(8.dp))
-                        ElderButton(text = "退出", onClick = onBack, modifier = Modifier.fillMaxWidth(),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (game.winner == 0) "🎉 你胡了！" else "😊 ${seatName(game.winner)} 胡了", fontSize = 20.sp)
+                    if (game.winSelfDraw) {
+                        Spacer(Modifier.height(4.dp))
+                        Text("自摸！", fontSize = 14.sp, color = Color(0xFFC62828))
                     }
+                    Spacer(Modifier.height(8.dp))
+                    // 无论谁和牌都显示番数明细与合计
+                    game.winFans.forEach { f -> Text("${f.name}  ${f.fan}番", fontSize = 14.sp) }
+                    Spacer(Modifier.height(4.dp))
+                    Text("共 ${FanCalculator.total(game.winFans)} 番", fontSize = 18.sp, color = Color(0xFFB23A3A))
+                    Spacer(Modifier.height(14.dp))
+                    ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 44.dp)
+                    Spacer(Modifier.height(6.dp))
+                    ElderButton(text = "退出", onClick = onBack, minHeight = 44.dp,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
                 }
             }
         }
 
-        // 流局弹窗：牌局结束（未有人和牌）也有完整用户交互（再来一局/退出）
+        // 流局面板：桌面中央显示流局提示与按钮
         if (game.exhausted && game.winner < 0) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0xCC000000)),
-                contentAlignment = Alignment.Center,
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xEEF7F1E6),
+                modifier = Modifier.align(Alignment.Center).padding(16.dp),
             ) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color.White) {
-                    Column(modifier = Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("😊", fontSize = 56.sp)
-                        Spacer(Modifier.height(10.dp))
-                        Text("流局", fontSize = 24.sp, color = Color(0xFF2E2A25))
-                        Spacer(Modifier.height(8.dp))
-                        Text("牌摸完了，没人胡牌。再来一局吧！", fontSize = 15.sp, color = Color(0xFF6E6A63))
-                        Spacer(Modifier.height(20.dp))
-                        ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, modifier = Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(8.dp))
-                        ElderButton(text = "退出", onClick = onBack, modifier = Modifier.fillMaxWidth(),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
-                    }
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("😊", fontSize = 40.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text("流局", fontSize = 22.sp, color = Color(0xFF2E2A25))
+                    Spacer(Modifier.height(6.dp))
+                    Text("牌摸完了，没人胡牌。再来一局吧！", fontSize = 13.sp, color = Color(0xFF6E6A63))
+                    Spacer(Modifier.height(14.dp))
+                    ElderButton(text = "再来一局", onClick = { game.newRound(); refresh() }, minHeight = 44.dp)
+                    Spacer(Modifier.height(6.dp))
+                    ElderButton(text = "退出", onClick = onBack, minHeight = 44.dp,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface))
                 }
             }
         }

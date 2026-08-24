@@ -1,6 +1,7 @@
 package com.lelebox.app.game.paijiu
 
 import android.content.pm.ActivityInfo
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,12 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.lelebox.app.R
 import com.lelebox.app.audio.Sfx
 import com.lelebox.app.ui.ElderButton
 import kotlinx.coroutines.delay
@@ -117,46 +122,105 @@ fun PaiJiuScreen(
     }
 
     Box(modifier = modifier.fillMaxSize().background(Color(0xFF2C4A3B))) {
-        Column(modifier = Modifier.fillMaxSize().padding(6.dp)) {
-            key(tick) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    // 顶部：三家电脑
-                    OpponentRow(
-                        players = listOf(1 to "孙权", 2 to "曹操", 3 to "刘备"),
-                        game = game,
-                        current = game.current,
-                        seatName = ::seatName,
-                    )
-                    // 中央：当前桌面牌 + 本轮状态
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            if (game.isLeadPhase) "${seatName(game.leader)} 领出" else "${seatName(game.currentPlayPlayer)} 出了 ${currentPlayLabel(game.currentPlay!!)}",
-                            fontSize = 18.sp,
-                            color = Color(0xFFFFE082),
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        game.currentPlay?.let { play ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                play.tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(52.dp, 84.dp)) }
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        // 玩家可接的牌提示
-                        if (game.current == 0 && !game.isLeadPhase) {
-                            val legal = PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!)
-                            Text(
-                                if (legal.isEmpty()) "接不住，请点「过」垫牌" else "可以出：${legal.size} 种",
-                                fontSize = 14.sp,
-                                color = Color(0xFFE8F0E4),
-                            )
-                        }
+        key(tick) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 三家电脑：位置参考麻将（曹操顶部居中、刘备左上、孙权右上），带头像
+                // 曹操 seat 2：顶部居中
+                Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SeatAvatar(R.drawable.avatar_caocao)
+                        Spacer(Modifier.width(4.dp))
+                        Text("曹操 ${game.hands[2].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
+                    }
+                    if (game.isFinished(2)) {
+                        Text("第${game.rankOf(2)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    // 牌背
+                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(game.hands[2].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
                     }
                 }
+                // 刘备 seat 3：左上
+                Column(
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 56.dp, start = 12.dp),
+                    horizontalAlignment = Alignment.Start,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SeatAvatar(R.drawable.avatar_liubei)
+                        Spacer(Modifier.width(4.dp))
+                        Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
+                    }
+                    if (game.isFinished(3)) {
+                        Text("第${game.rankOf(3)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(game.hands[3].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
+                    }
+                }
+                // 孙权 seat 1：右上
+                Column(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 56.dp, end = 12.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SeatAvatar(R.drawable.avatar_sunquan)
+                        Spacer(Modifier.width(4.dp))
+                        Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
+                    }
+                    if (game.isFinished(1)) {
+                        Text("第${game.rankOf(1)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(game.hands[1].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
+                    }
+                }
+                // 中央：当前桌面牌 + 本轮状态
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        if (game.isLeadPhase) "${seatName(game.leader)} 领出" else "${seatName(game.currentPlayPlayer)} 出了 ${currentPlayLabel(game.currentPlay!!)}",
+                        fontSize = 18.sp,
+                        color = Color(0xFFFFE082),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    game.currentPlay?.let { play ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            play.tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(52.dp, 84.dp)) }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    // 玩家可接的牌提示
+                    if (game.current == 0 && !game.isLeadPhase) {
+                        val legal = PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!)
+                        Text(
+                            if (legal.isEmpty()) "接不住，请点「过」垫牌" else "可以出：${legal.size} 种",
+                            fontSize = 14.sp,
+                            color = Color(0xFFE8F0E4),
+                        )
+                    }
+                }
+                // 返回按钮（左上角小圆钮）
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(36.dp)
+                        .align(Alignment.TopStart)
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("←", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
             }
-            // 玩家手牌区（key(tick) 内，保证按钮行随状态整体重绘）
+        }
+        // 玩家手牌区（key(tick) 内，保证按钮行随状态整体重绘）
+        Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 4.dp)) {
             key(tick) {
                 PlayerHandArea(
                     game = game,
@@ -201,20 +265,6 @@ fun PaiJiuScreen(
                 }
             }
         }
-
-        // 返回按钮
-        Box(
-            modifier = Modifier
-                .width(48.dp)
-                .height(36.dp)
-                .align(Alignment.TopStart)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable { onBack() },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("←", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-        }
     }
 }
 
@@ -225,35 +275,15 @@ private fun currentPlayLabel(play: PaiJiuPlay): String = when {
     else -> play.tiles[0].name
 }
 
-/** 三家电脑：名字 + 剩余张数 + 牌背 */
+/** 座位头像（圆形裁剪，复用麻将头像素材） */
 @Composable
-private fun OpponentRow(
-    players: List<Pair<Int, String>>,
-    game: PaiJiuGame,
-    current: Int,
-    seatName: (Int) -> String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        players.forEach { (p, name) ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "$name ${game.hands[p].size}张",
-                    fontSize = 13.sp,
-                    color = if (current == p && !game.gameOver) Color(0xFFFFE082) else Color(0xFFE8F0E4),
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                    repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(12.dp, 18.dp)) }
-                }
-                if (game.isFinished(p)) {
-                    Text("第${game.rankOf(p)}名", fontSize = 12.sp, color = Color(0xFFF6C453))
-                }
-            }
-        }
-    }
+private fun SeatAvatar(res: Int, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(res),
+        contentDescription = null,
+        modifier = modifier.clip(CircleShape).size(30.dp),
+        contentScale = ContentScale.Crop,
+    )
 }
 
 /** 玩家手牌 + 操作按钮 */
@@ -295,13 +325,13 @@ private fun PlayerHandArea(
             }
         }
         Spacer(Modifier.height(6.dp))
-        // 手牌
+        // 手牌：按规则文档 1.4 的顺序（rank.order 从小到大 = 天…杂五、猴六、猴三）
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom,
         ) {
-            game.hands[0].forEach { t ->
+            game.hands[0].sortedBy { it.rank.order }.forEach { t ->
                 val isSelected = selected == t
                 val canUse = game.current == 0 && !game.gameOver && (
                     game.isLeadPhase || PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!).any { it.tiles.contains(t) }

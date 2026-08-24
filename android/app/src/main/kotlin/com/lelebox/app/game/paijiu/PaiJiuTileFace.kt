@@ -21,13 +21,13 @@ import androidx.compose.ui.unit.dp
  * 牌九牌面：Canvas 程序化绘制。
  * 传统样式：白底（象牙白）、窄长形（1:3 左右）、上下两格、红黑点。
  * 红点：1 和 4；黑点：2、3、5、6（骰子排列）。
- * 可选显示牌名（老年友好：大字中文名）。
+ * 牌面上不显示牌名（默认），保持传统骨牌外观。
  */
 @Composable
 fun PaiJiuTileFace(
     tile: PaiJiuTile,
     modifier: Modifier = Modifier,
-    showName: Boolean = true,
+    showName: Boolean = false,
 ) {
     Canvas(modifier = modifier.clip(RoundedCornerShape(6.dp))) {
         drawDominoTile(tile, showName)

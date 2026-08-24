@@ -61,14 +61,14 @@ object PaiJiuTiles {
     val HEAVEN = PaiJiuTile(6, 6, TileSuit.CIVIL, "天", TileRank.HEAVEN)
     val EARTH = PaiJiuTile(1, 1, TileSuit.CIVIL, "地", TileRank.EARTH)
     val MAN = PaiJiuTile(4, 4, TileSuit.CIVIL, "人", TileRank.MAN)
-    val HARMONY = PaiJiuTile(1, 3, TileSuit.CIVIL, "和", TileRank.HARMONY)
-    val PLUM = PaiJiuTile(5, 5, TileSuit.CIVIL, "梅", TileRank.PLUM)
+    val HARMONY = PaiJiuTile(1, 3, TileSuit.CIVIL, "鹅牌", TileRank.HARMONY)
+    val PLUM = PaiJiuTile(5, 5, TileSuit.CIVIL, "麻五", TileRank.PLUM)
     val LONG_THREE = PaiJiuTile(3, 3, TileSuit.CIVIL, "长三", TileRank.LONG_THREE)
     val BENCH = PaiJiuTile(2, 2, TileSuit.CIVIL, "板凳", TileRank.BENCH)
-    val TIGER_HEAD = PaiJiuTile(5, 6, TileSuit.CIVIL, "虎头", TileRank.TIGER_HEAD)
-    val RED_HEAD = PaiJiuTile(4, 6, TileSuit.CIVIL, "红头", TileRank.RED_HEAD)
-    val HIGH_LEG = PaiJiuTile(1, 6, TileSuit.CIVIL, "高脚", TileRank.HIGH_LEG)
-    val LING_LING = PaiJiuTile(1, 5, TileSuit.CIVIL, "零霖", TileRank.LING_LING)
+    val TIGER_HEAD = PaiJiuTile(5, 6, TileSuit.CIVIL, "老虎", TileRank.TIGER_HEAD)
+    val RED_HEAD = PaiJiuTile(4, 6, TileSuit.CIVIL, "四六", TileRank.RED_HEAD)
+    val HIGH_LEG = PaiJiuTile(1, 6, TileSuit.CIVIL, "大锤", TileRank.HIGH_LEG)
+    val LING_LING = PaiJiuTile(1, 5, TileSuit.CIVIL, "小锤", TileRank.LING_LING)
 
     // ---- 武牌（每张单张，共 10 张）----
     val MIX9_A = PaiJiuTile(3, 6, TileSuit.MILITARY, "杂九", TileRank.MIXED_NINE)
@@ -79,10 +79,10 @@ object PaiJiuTiles {
     val MIX7_B = PaiJiuTile(3, 4, TileSuit.MILITARY, "杂七", TileRank.MIXED_SEVEN)
     val MIX5_A = PaiJiuTile(1, 4, TileSuit.MILITARY, "杂五", TileRank.MIXED_FIVE)
     val MIX5_B = PaiJiuTile(2, 3, TileSuit.MILITARY, "杂五", TileRank.MIXED_FIVE)
-    /** 至尊组件：[2:4]（二四，单出按杂六计，点数 6） */
-    val SUPREME_A = PaiJiuTile(2, 4, TileSuit.MILITARY, "二四", TileRank.MIXED_SIX)
-    /** 至尊组件：[1:2]（丁三/么二，单出按杂三计，点数 3） */
-    val SUPREME_B = PaiJiuTile(1, 2, TileSuit.MILITARY, "丁三", TileRank.MIXED_THREE)
+    /** 至尊组件：[2:4]（猴六，单出按杂六计，点数 6） */
+    val SUPREME_A = PaiJiuTile(2, 4, TileSuit.MILITARY, "猴六", TileRank.MIXED_SIX)
+    /** 至尊组件：[1:2]（猴三，单出按杂三计，点数 3） */
+    val SUPREME_B = PaiJiuTile(1, 2, TileSuit.MILITARY, "猴三", TileRank.MIXED_THREE)
 
     /** 完整 32 张牌（文牌各 2 张 + 武牌各 1 张） */
     val FULL_SET: List<PaiJiuTile> by lazy {

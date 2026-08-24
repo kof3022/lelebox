@@ -92,8 +92,8 @@ class GameShellActivity : ComponentActivity() {
 
             ElderTheme(fontScale = fontScale) {
                 Column(Modifier.fillMaxSize()) {
-                    // 斗地主/麻将沉浸全屏：隐藏壳顶栏，界面内自带紧凑返回/帮助
-                    if (game.id != "doudizhu" && game.id != "mahjong") {
+                    // 斗地主/麻将/牌九沉浸全屏：隐藏壳顶栏，界面内自带紧凑返回/帮助
+                    if (game.id != "doudizhu" && game.id != "mahjong" && game.id != "paijiu") {
                         ElderTopBar(
                             title = game.title,
                             onBack = { finish() },

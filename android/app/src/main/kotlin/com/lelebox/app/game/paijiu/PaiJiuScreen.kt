@@ -94,19 +94,25 @@ fun PaiJiuScreen(
         if (game.pass(0, t)) { Sfx.click(context); selected = null; refresh() }
     }
 
-    // AI 回合循环
-    LaunchedEffect(tick) {
-        while (!game.gameOver && game.current != 0) {
-            delay(700)
-            val p = game.current
-            if (game.isLeadPhase) {
-                game.play(p, PaiJiuAi.chooseLead(game.hands[p], difficulty))
-            } else {
-                val f = PaiJiuAi.chooseFollow(game.hands[p], game.currentPlay!!, difficulty)
-                if (f != null) game.play(p, f) else game.pass(p, PaiJiuAi.choosePass(game.hands[p], difficulty))
+    // AI 回合循环：单个常驻协程按 current 推进（不再依赖 tick 重启，
+    // 避免 refresh() 取消/重启协程造成的竞态卡住）
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (!game.gameOver && game.current != 0) {
+                delay(700)
+                if (!game.gameOver && game.current != 0) {
+                    val p = game.current
+                    if (game.isLeadPhase) {
+                        game.play(p, PaiJiuAi.chooseLead(game.hands[p], difficulty))
+                    } else {
+                        val f = PaiJiuAi.chooseFollow(game.hands[p], game.currentPlay!!, difficulty)
+                        if (f != null) game.play(p, f) else game.pass(p, PaiJiuAi.choosePass(game.hands[p], difficulty))
+                    }
+                    Sfx.click(context)
+                }
             }
-            Sfx.click(context)
             refresh()
+            delay(120)
         }
     }
 
@@ -150,14 +156,16 @@ fun PaiJiuScreen(
                     }
                 }
             }
-            // 玩家手牌区
-            PlayerHandArea(
-                game = game,
-                selected = selected,
-                onSelect = { t -> selected = if (selected == t) null else t },
-                onPlay = ::playerPlay,
-                onPass = ::playerPass,
-            )
+            // 玩家手牌区（key(tick) 内，保证按钮行随状态整体重绘）
+            key(tick) {
+                PlayerHandArea(
+                    game = game,
+                    selected = selected,
+                    onSelect = { t -> selected = if (selected == t) null else t },
+                    onPlay = ::playerPlay,
+                    onPass = ::playerPass,
+                )
+            }
         }
 
         // 结束面板

@@ -136,9 +136,9 @@ class PaiJiuGameTest {
         assertTrue(g.isLeadPhase)
         assertEquals(0, g.current)
         assertEquals(0, g.leader)
-        // 玩家赢得这一墩（明牌：领出的那张）
+        // 玩家赢得这一墩（明牌：领出的那张，墩主牌在最上）
         assertEquals(1, g.trickCount[0])
-        assertEquals(listOf(lead), g.tricks[0][0])
+        assertEquals(listOf(0 to listOf(lead)), g.tricks[0][0])
     }
 
     @Test
@@ -156,9 +156,9 @@ class PaiJiuGameTest {
         g.play(1, listOf(mix9))
         g.pass(2, g.hands[2].minByOrNull { it.rank.order }!!)
         g.pass(3, g.hands[3].minByOrNull { it.rank.order }!!)
-        // 孙权赢墩收走两明牌
+        // 孙权赢墩：墩主（孙权）的牌在最上，玩家牌在其下
         assertEquals(1, g.trickCount[1])
-        assertEquals(listOf(mix5, mix9), g.tricks[1][0])
+        assertEquals(listOf(1 to listOf(mix9), 0 to listOf(mix5)), g.tricks[1][0])
         // 玩家无墩
         assertEquals(0, g.trickCount[0])
     }

@@ -144,120 +144,22 @@ fun PaiJiuScreen(
         key(tick) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // 三家电脑：位置参考麻将（曹操顶部居中、刘备左上、孙权右上），带头像
-                // 曹操 seat 2：顶部居中
-                Column(modifier = Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SeatAvatar(R.drawable.avatar_caocao)
-                        Spacer(Modifier.width(4.dp))
-                        Text("曹操 ${game.hands[2].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
-                    }
-                    if (game.isFinished(2)) {
-                        Text("第${game.rankOf(2)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    // 牌背
-                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                        repeat(game.hands[2].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
-                    }
-                    // 垫牌记录（牌背，不明牌）
-                    if (game.passCount[2] > 0) {
-                        Spacer(Modifier.height(2.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
-                            repeat(game.passCount[2]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
-                        }
-                    }
-                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
-                    if (game.trickCount[2] > 0) {
-                        Spacer(Modifier.height(3.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("墩${game.trickCount[2]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
-                            game.tricks[2].forEachIndexed { ti, trickTiles ->
-                                // 每个墩之间留一点间隔
-                                if (ti > 0) Spacer(Modifier.width(4.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
-                                }
-                            }
-                        }
-                    }
-                }
-                // 刘备 seat 3：左上
-                Column(
+                OpponentSeat(
+                    p = 2, name = "曹操", avatar = R.drawable.avatar_caocao, game = game,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                )
+                OpponentSeat(
+                    p = 3, name = "刘备", avatar = R.drawable.avatar_liubei, game = game,
                     modifier = Modifier.align(Alignment.TopStart).padding(top = 56.dp, start = 12.dp),
                     horizontalAlignment = Alignment.Start,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SeatAvatar(R.drawable.avatar_liubei)
-                        Spacer(Modifier.width(4.dp))
-                        Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
-                    }
-                    if (game.isFinished(3)) {
-                        Text("第${game.rankOf(3)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                        repeat(game.hands[3].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
-                    }
-                    // 垫牌记录（牌背，不明牌）
-                    if (game.passCount[3] > 0) {
-                        Spacer(Modifier.height(2.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
-                            repeat(game.passCount[3]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
-                        }
-                    }
-                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
-                    if (game.trickCount[3] > 0) {
-                        Spacer(Modifier.height(3.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("墩${game.trickCount[3]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
-                            game.tricks[3].forEachIndexed { ti, trickTiles ->
-                                if (ti > 0) Spacer(Modifier.width(4.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
-                                }
-                            }
-                        }
-                    }
-                }
-                // 孙权 seat 1：右上
-                Column(
+                )
+                OpponentSeat(
+                    p = 1, name = "孙权", avatar = R.drawable.avatar_sunquan, game = game,
                     modifier = Modifier.align(Alignment.TopEnd).padding(top = 56.dp, end = 12.dp),
                     horizontalAlignment = Alignment.End,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SeatAvatar(R.drawable.avatar_sunquan)
-                        Spacer(Modifier.width(4.dp))
-                        Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
-                    }
-                    if (game.isFinished(1)) {
-                        Text("第${game.rankOf(1)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                        repeat(game.hands[1].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
-                    }
-                    // 垫牌记录（牌背，不明牌）
-                    if (game.passCount[1] > 0) {
-                        Spacer(Modifier.height(2.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
-                            repeat(game.passCount[1]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
-                        }
-                    }
-                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
-                    if (game.trickCount[1] > 0) {
-                        Spacer(Modifier.height(3.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("墩${game.trickCount[1]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
-                            game.tricks[1].forEachIndexed { ti, trickTiles ->
-                                if (ti > 0) Spacer(Modifier.width(4.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
-                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
-                                }
-                            }
-                        }
-                    }
-                }
-                // 中央：当前桌面牌 + 本轮状态
+                )
+                // 中央：本轮状态提示（出牌显示在出牌者附近，不再显示在玩家前面）
                 Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -267,12 +169,6 @@ fun PaiJiuScreen(
                         fontSize = 18.sp,
                         color = Color(0xFFFFE082),
                     )
-                    Spacer(Modifier.height(6.dp))
-                    game.currentPlay?.let { play ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            play.tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(52.dp, 84.dp)) }
-                        }
-                    }
                     Spacer(Modifier.height(8.dp))
                     // 玩家可接的牌提示
                     if (game.current == 0 && !game.isLeadPhase) {
@@ -366,6 +262,76 @@ private fun SeatAvatar(res: Int, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * 电脑座位：头像+名字+牌背，附近显示本轮出的牌（大牌形式）、垫牌（牌背）、
+ * 以及该家赢得的墩（竖向明牌，墩主牌在最上，其余按出牌顺序）。
+ */
+@Composable
+private fun OpponentSeat(
+    p: Int,
+    name: String,
+    avatar: Int,
+    game: PaiJiuGame,
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+) {
+    Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SeatAvatar(avatar)
+            Spacer(Modifier.width(4.dp))
+            Text("$name ${game.hands[p].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
+        }
+        if (game.isFinished(p)) {
+            Text("第${game.rankOf(p)}名", fontSize = 13.sp, color = Color(0xFFF6C453))
+        }
+        Spacer(Modifier.height(4.dp))
+        // 牌背
+        Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+            repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(13.dp, 19.dp)) }
+        }
+        // 本轮出的牌（大牌形式，显示在该家附近）
+        if (game.lastPlayed[p].isNotEmpty()) {
+            Spacer(Modifier.height(3.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(20.dp, 32.dp)) }
+            }
+        }
+        // 垫牌记录（牌背，不明牌）
+        if (game.passCount[p] > 0) {
+            Spacer(Modifier.height(2.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
+                repeat(game.passCount[p]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
+            }
+        }
+        // 墩牌：竖向明牌（墩主牌在最上，其余按出牌顺序），标题"N墩"
+        if (game.trickCount[p] > 0) {
+            Spacer(Modifier.height(4.dp))
+            Text("${game.trickCount[p]}墩", fontSize = 13.sp, color = Color(0xFFFFE082))
+            game.tricks[p].forEachIndexed { ti, trick ->
+                Spacer(Modifier.height(3.dp))
+                // 竖向：每个出牌者的牌一行
+                trick.forEach { (player, tiles) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        // 墩主牌加金框标记
+                        val isOwner = player == p
+                        Row(
+                            modifier = if (isOwner) Modifier.border(1.dp, Color(0xFFFFE082), RoundedCornerShape(3.dp)) else Modifier,
+                        ) {
+                            tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(13.dp, 21.dp)) }
+                        }
+                        if (ti == 0 && isOwner) {
+                            Spacer(Modifier.width(2.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** 玩家手牌 + 操作按钮 */
 @Composable
 private fun PlayerHandArea(
@@ -405,29 +371,63 @@ private fun PlayerHandArea(
             }
         }
         Spacer(Modifier.height(6.dp))
-        // 手牌：按规则文档 1.4 的顺序（rank.order 从小到大 = 天…杂五、猴六、猴三）
+        // 手牌行：手牌居中，右侧显示本轮出的牌 + 墩（竖向明牌）
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom,
         ) {
-            val sorted = game.hands[0].sortedBy { it.rank.order }
-            sorted.forEachIndexed { idx, t ->
-                val isSelected = idx == selectedIdx
-                val canUse = game.current == 0 && !game.gameOver && (
-                    game.isLeadPhase || PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!).any { it.tiles.contains(t) }
-                    )
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 2.dp)
-                        .then(
-                            if (isSelected) Modifier.border(3.dp, Color(0xFFF6C453), RoundedCornerShape(6.dp))
-                            else if (canUse) Modifier.border(2.dp, Color(0xFF8BC34A), RoundedCornerShape(6.dp))
-                            else Modifier
+            // 手牌（居中）
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
+                val sorted = game.hands[0].sortedBy { it.rank.order }
+                sorted.forEachIndexed { idx, t ->
+                    val isSelected = idx == selectedIdx
+                    val canUse = game.current == 0 && !game.gameOver && (
+                        game.isLeadPhase || PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!).any { it.tiles.contains(t) }
                         )
-                        .clickable(enabled = game.current == 0 && !game.gameOver) { onSelect(idx) },
-                ) {
-                    PaiJiuTileFace(t, Modifier.size(PaiJiuTileWidth, PaiJiuTileHeight))
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 2.dp)
+                            .then(
+                                if (isSelected) Modifier.border(3.dp, Color(0xFFF6C453), RoundedCornerShape(6.dp))
+                                else if (canUse) Modifier.border(2.dp, Color(0xFF8BC34A), RoundedCornerShape(6.dp))
+                                else Modifier
+                            )
+                            .clickable(enabled = game.current == 0 && !game.gameOver) { onSelect(idx) },
+                    ) {
+                        PaiJiuTileFace(t, Modifier.size(PaiJiuTileWidth, PaiJiuTileHeight))
+                    }
+                }
+            }
+            // 手牌右侧：本轮出的牌（大牌）+ 墩（竖向明牌）
+            Spacer(Modifier.width(8.dp))
+            Column {
+                // 本轮出的牌（附近大牌形式）
+                if (game.lastPlayed[0].isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        game.lastPlayed[0].forEach { t -> PaiJiuTileFace(t, Modifier.size(26.dp, 42.dp)) }
+                    }
+                }
+                // 墩：竖向明牌（墩主牌在最上），标题"N墩"
+                if (game.trickCount[0] > 0) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("${game.trickCount[0]}墩", fontSize = 13.sp, color = Color(0xFFFFE082))
+                    game.tricks[0].forEach { trick ->
+                        Spacer(Modifier.height(3.dp))
+                        trick.forEach { (player, tiles) ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                val isOwner = player == 0
+                                Row(
+                                    modifier = if (isOwner) Modifier.border(1.dp, Color(0xFFFFE082), RoundedCornerShape(3.dp)) else Modifier,
+                                ) {
+                                    tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(13.dp, 21.dp)) }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -441,24 +441,6 @@ private fun PlayerHandArea(
             ) {
                 Text("已垫牌 ", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                 repeat(game.passCount[0]) { PaiJiuTileBack(Modifier.size(14.dp, 20.dp)) }
-            }
-        }
-        // 玩家墩牌：明牌显示（与垫牌分开，醒目金色）
-        if (game.trickCount[0] > 0) {
-            Spacer(Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("你的墩 ${game.trickCount[0]}：", fontSize = 13.sp, color = Color(0xFFFFE082))
-                Spacer(Modifier.width(4.dp))
-                game.tricks[0].forEachIndexed { ti, trickTiles ->
-                    if (ti > 0) Spacer(Modifier.width(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(16.dp, 26.dp)) }
-                    }
-                }
             }
         }
     }

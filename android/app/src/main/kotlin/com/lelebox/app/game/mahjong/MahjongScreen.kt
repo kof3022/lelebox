@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -230,8 +231,12 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    MeldGroup(game.exposed[2])
-                    OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2, highlightColor = hlColor)
+                    // 曹操：明刻在弃牌右侧（固定、留少许间隔）
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2, highlightColor = hlColor)
+                        Spacer(Modifier.width(8.dp))
+                        MeldGroup(game.exposed[2])
+                    }
                 }
                 // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row ----
                 Column(
@@ -246,8 +251,12 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    MeldGroup(game.exposed[3])
-                    OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3, highlightColor = hlColor)
+                    // 刘备：明刻在弃牌右侧（固定、留少许间隔）
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3, highlightColor = hlColor)
+                        Spacer(Modifier.width(8.dp))
+                        MeldGroup(game.exposed[3])
+                    }
                 }
                 // ---- Right seat 1 (孙权): top-anchored (avatar never moves), discards multi-row ----
                 Column(
@@ -262,8 +271,12 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    MeldGroup(game.exposed[1])
-                    OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1, highlightColor = hlColor)
+                    // 孙权：明刻在弃牌左侧（固定、留少许间隔）
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        MeldGroup(game.exposed[1])
+                        Spacer(Modifier.width(8.dp))
+                        OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1, highlightColor = hlColor)
+                    }
                 }
             }
             } // key(tick)
@@ -300,45 +313,39 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's exposed melds (碰/杠/吃): anchored to the LEFT, fixed position (never shifts)
+            // Player's exposed melds (LEFT of discards, fixed) + own discards (8/row)
             key(tick) {
-                if (game.exposed[0].isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.Bottom,
-                    ) {
-                        game.exposed[0].forEach { meld ->
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
-                                    meldTiles(meld).forEach { t -> TileFace(t, Modifier.size(16.dp, 22.dp)) }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    if (game.exposed[0].isNotEmpty()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+                            game.exposed[0].forEach { meld ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
+                                        meldTiles(meld).forEach { t -> TileFace(t, Modifier.size(16.dp, 22.dp)) }
+                                    }
+                                    Text(meldLabel(meld), fontSize = 9.sp, color = Color(0xFFFFE082))
                                 }
-                                Text(meldLabel(meld), fontSize = 9.sp, color = Color(0xFFFFE082))
                             }
-                            Spacer(Modifier.width(10.dp))
                         }
+                        Spacer(Modifier.width(8.dp))
                     }
-                    Spacer(Modifier.height(2.dp))
-                }
-            }
-
-            // Player's own discards: 8 per row, wraps upward from the hand
-            key(tick) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     OpponentDiscardRows(game.discards[0], perRow = 8)
                 }
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: all tiles sorted; the just-drawn tile is marked (gold border + ▼).
-            // Every tile keeps a fixed marker slot below, so tiles stay at the same height
-            // and same-value tiles (e.g. two East winds) line up together.
+            // Player hand: all tiles sorted; the just-drawn tile stands out
+            // (gold border + ▼ below, slightly raised) — previous style.
             key(tick) {
                 val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
                 val hand = game.hands[0].sortedBy { it.groupKey() }
                 var marked = false
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(60.dp),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(64.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.Bottom,
                 ) {
@@ -351,13 +358,17 @@ fun MahjongScreen(
                                     Modifier.border(2.dp, Color(0xFFF6C453), RoundedCornerShape(4.dp))
                                 } else Modifier,
                             ) {
-                                TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
+                                TileFace(
+                                    t,
+                                    if (isDrawn) {
+                                        Modifier.size(32.dp, 46.dp).offset(y = (-6).dp).clickable { onDiscard(t) }
+                                    } else {
+                                        Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) }
+                                    },
+                                )
                             }
-                            // 固定高度标记槽：所有牌同高
-                            Box(Modifier.height(12.dp), contentAlignment = Alignment.Center) {
-                                if (isDrawn) {
-                                    Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
-                                }
+                            if (isDrawn) {
+                                Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
                             }
                         }
                     }

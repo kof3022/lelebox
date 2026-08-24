@@ -141,6 +141,8 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         hands[0].clear(); hands[0].addAll(hand)
         hands[0].remove(d)
         exposed[0].add(Meld.Chow(option))
+        // 被吃的弃牌从出牌者弃牌区移除（归入顺子）
+        if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[0] = false
         lastDiscard = null
         hasDrawn = false
@@ -164,6 +166,8 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (hands[p].count { it == d } < 2) return false
         hands[p].remove(d); hands[p].remove(d)
         exposed[p].add(Meld.Pung(listOf(d, d, d)))
+        // 被碰的弃牌从出牌者弃牌区移除（归入明刻，避免同一张牌显示两次 → 出现5张假象）
+        if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[p] = false
         lastDiscard = null
         current = p
@@ -177,6 +181,8 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         if (hands[p].count { it == d } < 3) return false
         repeat(3) { hands[p].remove(d) }
         exposed[p].add(Meld.Kong(listOf(d, d, d, d)))
+        // 被杠的弃牌从出牌者弃牌区移除（归入明杠）
+        if (lastDiscardPlayer in 0..3) discards[lastDiscardPlayer].remove(d)
         concealed[p] = false
         lastDiscard = null
         current = p

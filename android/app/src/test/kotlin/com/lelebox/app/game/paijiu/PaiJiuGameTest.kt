@@ -136,6 +136,31 @@ class PaiJiuGameTest {
         assertTrue(g.isLeadPhase)
         assertEquals(0, g.current)
         assertEquals(0, g.leader)
+        // 玩家赢得这一墩（明牌：领出的那张）
+        assertEquals(1, g.trickCount[0])
+        assertEquals(listOf(lead), g.tricks[0][0])
+    }
+
+    @Test
+    fun `beater collects trick tiles as winner`() {
+        val g = PaiJiuGame(seed = 7)
+        g.newRound()
+        // 玩家领出杂五，孙权用杂九接
+        val mix5 = PaiJiuTiles.MIX5_A
+        val mix9 = PaiJiuTiles.MIX9_A
+        g.hands[0].clear(); g.hands[0].addAll(listOf(mix5) + PaiJiuTiles.FULL_SET.take(7))
+        g.hands[1].clear(); g.hands[1].addAll(listOf(mix9) + PaiJiuTiles.FULL_SET.drop(8).take(7))
+        g.hands[2].clear(); g.hands[2].addAll(PaiJiuTiles.FULL_SET.drop(16).take(8))
+        g.hands[3].clear(); g.hands[3].addAll(PaiJiuTiles.FULL_SET.drop(24).take(8))
+        g.play(0, listOf(mix5))
+        g.play(1, listOf(mix9))
+        g.pass(2, g.hands[2].minByOrNull { it.rank.order }!!)
+        g.pass(3, g.hands[3].minByOrNull { it.rank.order }!!)
+        // 孙权赢墩收走两明牌
+        assertEquals(1, g.trickCount[1])
+        assertEquals(listOf(mix5, mix9), g.tricks[1][0])
+        // 玩家无墩
+        assertEquals(0, g.trickCount[0])
     }
 
     @Test

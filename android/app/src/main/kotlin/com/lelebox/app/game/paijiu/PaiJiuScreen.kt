@@ -104,25 +104,32 @@ fun PaiJiuScreen(
         if (game.pass(0, t)) { Sfx.click(context); selectedIdx = -1; refresh() }
     }
 
-    // AI 回合循环：单个常驻协程按 current 推进（不再依赖 tick 重启，
-    // 避免 refresh() 取消/重启协程造成的竞态卡住）
+    // AI 回合循环：单个常驻协程按 current 推进。
+    // 仅在 AI 实际行动（出牌/垫牌成功）后才 refresh()，避免无脑高频重组
+    // 导致手牌/按钮点击命中不稳定。
     LaunchedEffect(Unit) {
         while (true) {
             if (!game.gameOver && game.current != 0) {
                 delay(700)
                 if (!game.gameOver && game.current != 0) {
                     val p = game.current
+                    val beforePlay = game.currentPlay
+                    val beforeCurrent = game.current
                     if (game.isLeadPhase) {
                         game.play(p, PaiJiuAi.chooseLead(game.hands[p], difficulty))
                     } else {
                         val f = PaiJiuAi.chooseFollow(game.hands[p], game.currentPlay!!, difficulty)
                         if (f != null) game.play(p, f) else game.pass(p, PaiJiuAi.choosePass(game.hands[p], difficulty))
                     }
-                    Sfx.click(context)
+                    // 状态确实变化才刷新（AI 行动成功）
+                    if (game.current != beforeCurrent || game.currentPlay != beforePlay || game.gameOver) {
+                        Sfx.click(context)
+                        refresh()
+                    }
                 }
+            } else {
+                delay(200) // 玩家回合，空闲轮询
             }
-            refresh()
-            delay(120)
         }
     }
 
@@ -159,6 +166,20 @@ fun PaiJiuScreen(
                             repeat(game.passCount[2]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
                         }
                     }
+                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
+                    if (game.trickCount[2] > 0) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("墩${game.trickCount[2]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
+                            game.tricks[2].forEachIndexed { ti, trickTiles ->
+                                // 每个墩之间留一点间隔
+                                if (ti > 0) Spacer(Modifier.width(4.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                }
+                            }
+                        }
+                    }
                 }
                 // 刘备 seat 3：左上
                 Column(
@@ -184,6 +205,19 @@ fun PaiJiuScreen(
                             repeat(game.passCount[3]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
                         }
                     }
+                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
+                    if (game.trickCount[3] > 0) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("墩${game.trickCount[3]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
+                            game.tricks[3].forEachIndexed { ti, trickTiles ->
+                                if (ti > 0) Spacer(Modifier.width(4.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                }
+                            }
+                        }
+                    }
                 }
                 // 孙权 seat 1：右上
                 Column(
@@ -207,6 +241,19 @@ fun PaiJiuScreen(
                         Spacer(Modifier.height(2.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy((-2).dp)) {
                             repeat(game.passCount[1]) { PaiJiuTileBack(Modifier.size(10.dp, 15.dp)) }
+                        }
+                    }
+                    // 墩牌（明牌，赢墩收走，与垫牌分开、醒目）
+                    if (game.trickCount[1] > 0) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("墩${game.trickCount[1]} ", fontSize = 12.sp, color = Color(0xFFFFE082))
+                            game.tricks[1].forEachIndexed { ti, trickTiles ->
+                                if (ti > 0) Spacer(Modifier.width(4.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                }
+                            }
                         }
                     }
                 }
@@ -237,20 +284,20 @@ fun PaiJiuScreen(
                         )
                     }
                 }
-                // 返回按钮（左上角小圆钮）
-                Box(
-                    modifier = Modifier
-                        .width(48.dp)
-                        .height(36.dp)
-                        .align(Alignment.TopStart)
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { onBack() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("←", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-                }
             }
+        }
+        // 返回按钮（左上角小圆钮，放 key(tick) 外避免重组导致点击失灵）
+        Box(
+            modifier = Modifier
+                .width(48.dp)
+                .height(36.dp)
+                .align(Alignment.TopStart)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable { onBack() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("←", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         // 玩家手牌区（key(tick) 内，保证按钮行随状态整体重绘）
         Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 4.dp)) {
@@ -394,6 +441,24 @@ private fun PlayerHandArea(
             ) {
                 Text("已垫牌 ", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                 repeat(game.passCount[0]) { PaiJiuTileBack(Modifier.size(14.dp, 20.dp)) }
+            }
+        }
+        // 玩家墩牌：明牌显示（与垫牌分开，醒目金色）
+        if (game.trickCount[0] > 0) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("你的墩 ${game.trickCount[0]}：", fontSize = 13.sp, color = Color(0xFFFFE082))
+                Spacer(Modifier.width(4.dp))
+                game.tricks[0].forEachIndexed { ti, trickTiles ->
+                    if (ti > 0) Spacer(Modifier.width(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        trickTiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(16.dp, 26.dp)) }
+                    }
+                }
             }
         }
     }

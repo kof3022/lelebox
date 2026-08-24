@@ -38,6 +38,15 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
     /** 各家累计垫牌数（UI 显示牌背标记，不明牌） */
     val passCount = IntArray(4)
 
+    /** 各家赢得的墩：每墩是这一轮出的明牌（按出牌顺序），墩数 = tricks[p].size */
+    val tricks = Array(4) { mutableListOf<List<PaiJiuTile>>() }
+
+    /** 当前轮打出的牌（明牌，赢墩者收走） */
+    private val roundPlays = mutableListOf<List<PaiJiuTile>>()
+
+    /** 各家累计墩数（= tricks[p].size 的快捷） */
+    val trickCount = IntArray(4)
+
     /** 结牌顺序（先出完的在前） */
     val finished = mutableListOf<Int>()
 
@@ -61,6 +70,9 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         currentPlayPlayer = -1
         acted.fill(false)
         passCount.fill(0)
+        tricks.forEach { it.clear() }
+        roundPlays.clear()
+        trickCount.fill(0)
         finished.clear()
         gameOver = false
         winner = -1
@@ -99,6 +111,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         currentPlay = play
         currentPlayPlayer = p
         acted[p] = true
+        roundPlays.add(tiles) // 本轮的明牌（赢墩者收）
         checkFinish(p)
         advance()
         return true
@@ -141,9 +154,15 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         return -1
     }
 
-    /** 一轮结束：最后出牌者赢墩，领出下一轮 */
+    /** 一轮结束：最后出牌者赢墩（明牌收墩），领出下一轮 */
     private fun endRound() {
         val roundWinner = currentPlayPlayer
+        // 赢墩者收走本轮的明牌（墩）
+        if (roundWinner in 0..3) {
+            tricks[roundWinner].add(roundPlays.flatten().toList())
+            trickCount[roundWinner] = tricks[roundWinner].size
+        }
+        roundPlays.clear()
         acted.fill(false)
         currentPlay = null
         currentPlayPlayer = -1

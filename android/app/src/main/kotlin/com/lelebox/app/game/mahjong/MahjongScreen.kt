@@ -100,7 +100,9 @@ fun MahjongScreen(
     }
 
     fun onDiscard(t: Tile) {
-        if (!game.hasDrawn || game.winner >= 0) return
+        if (game.winner >= 0) return
+        // 正常出牌需已摸牌；碰/吃后（mustDiscard）无需摸牌直接弃
+        if (!game.hasDrawn && !game.mustDiscard) return
         game.discard(0, t)
         Sfx.click(context)
         refresh()
@@ -174,13 +176,19 @@ fun MahjongScreen(
                 // 玩家可对某家的弃牌碰/杠/和 → 高亮那家的最新弃牌
                 val pendingAction = game.winner < 0 && !game.exhausted && game.current == 0 &&
                     !game.hasDrawn && game.lastDiscard != null && (canPungNow || canKongNow || canWinNow)
-                // Back button (top-left, floats over the table)
-                ElderButton(
-                    text = "←",
-                    onClick = onBack,
-                    minHeight = 36.dp,
-                    modifier = Modifier.width(48.dp).align(Alignment.TopStart),
-                )
+                // Back button (top-left): arrow centered in the button
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(36.dp)
+                        .align(Alignment.TopStart)
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("←", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
                 // ---- Center: two-layer tile wall at the table image's gold-ring center ----
                 Column(
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 132.dp),
@@ -212,7 +220,7 @@ fun MahjongScreen(
                         Text("曹操 ${game.hands[2].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
-                        repeat(minOf(game.hands[2].size, 12)) { TileBack(Modifier.size(14.dp, 20.dp)) }
+                        repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
                     OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2)
                 }
@@ -226,8 +234,8 @@ fun MahjongScreen(
                         Spacer(Modifier.width(4.dp))
                         Text("刘备 ${game.hands[3].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        repeat(minOf(game.hands[3].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
+                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                        repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
                     OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3)
                 }
@@ -241,8 +249,8 @@ fun MahjongScreen(
                         Spacer(Modifier.width(4.dp))
                         Text("孙权 ${game.hands[1].size}张", fontSize = 12.sp, color = Color(0xFFE8F0E4))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        repeat(minOf(game.hands[1].size, 5)) { TileBack(Modifier.size(20.dp, 14.dp)) }
+                    Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
+                        repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
                     OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1)
                 }

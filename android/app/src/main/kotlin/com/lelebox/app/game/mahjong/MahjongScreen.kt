@@ -91,12 +91,19 @@ fun MahjongScreen(
     /** AI seat display names (Three Kingdoms): 1=孙权(right), 2=曹操(top), 3=刘备(left) */
     fun seatName(p: Int): String = when (p) { 1 -> "孙权"; 2 -> "曹操"; 3 -> "刘备"; else -> "你" }
 
+    /** 每轮重算可操作项；无有效弃牌或已摸牌时清零（避免残留旧按钮导致碰牌不触发/误显示） */
     fun checkActions() {
-        val d = game.lastDiscard
-        val canAct = d != null && !game.hasDrawn
-        canPungNow = canAct && game.canPung(0)
-        canKongNow = canAct && game.canKong(0)
-        canWinNow = canAct && Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty()
+        val d = game.lastDiscard ?: run {
+            canPungNow = false; canKongNow = false; canWinNow = false
+            return
+        }
+        if (game.hasDrawn || game.current != 0 || game.winner >= 0) {
+            canPungNow = false; canKongNow = false; canWinNow = false
+            return
+        }
+        canPungNow = game.canPung(0)
+        canKongNow = game.canKong(0)
+        canWinNow = Mahjong.findWins(game.hands[0].toList() + d).isNotEmpty()
     }
 
     fun onDiscard(t: Tile) {
@@ -173,9 +180,10 @@ fun MahjongScreen(
             // (discard rows are built from mutable lists that Compose otherwise skips)
             key(tick) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // 玩家可对某家的弃牌碰/杠/和 → 高亮那家的最新弃牌
+                // 玩家可对某家的弃牌碰/杠/和 → 高亮那家的最新弃牌（和=红，碰/杠=金）
                 val pendingAction = game.winner < 0 && !game.exhausted && game.current == 0 &&
                     !game.hasDrawn && game.lastDiscard != null && (canPungNow || canKongNow || canWinNow)
+                val hlColor = if (canWinNow) Color(0xFFC62828) else Color(0xFFF6C453)
                 // Back button (top-left): arrow centered in the button
                 Box(
                     modifier = Modifier
@@ -222,7 +230,8 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2)
+                    MeldGroup(game.exposed[2])
+                    OpponentDiscardRows(game.discards[2], highlight = pendingAction && game.lastDiscardPlayer == 2, highlightColor = hlColor)
                 }
                 // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row ----
                 Column(
@@ -237,7 +246,8 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3)
+                    MeldGroup(game.exposed[3])
+                    OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3, highlightColor = hlColor)
                 }
                 // ---- Right seat 1 (孙权): top-anchored (avatar never moves), discards multi-row ----
                 Column(
@@ -252,14 +262,19 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1)
+                    MeldGroup(game.exposed[1])
+                    OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1, highlightColor = hlColor)
                 }
             }
             } // key(tick)
 
             // Action buttons (only when actions exist; wall is top-anchored so it never shifts)
             key(tick) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     if (game.winner < 0 && !game.exhausted && game.current == 0) {
                         // 碰/杠/和（吃弃牌）只在有可操作的弃牌时显示；碰/吃后 lastDiscard 已清 → 消失
                         val actOnDiscard = game.lastDiscard != null && !game.hasDrawn
@@ -285,12 +300,12 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's exposed melds (碰/杠/吃): the claimed tiles must be visible on the table
+            // Player's exposed melds (碰/杠/吃): anchored to the LEFT, fixed position (never shifts)
             key(tick) {
                 if (game.exposed[0].isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.Bottom,
                     ) {
                         game.exposed[0].forEach { meld ->
@@ -315,13 +330,15 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player hand: all tiles sorted; the just-drawn tile is marked (gold border + ▼)
+            // Player hand: all tiles sorted; the just-drawn tile is marked (gold border + ▼).
+            // Every tile keeps a fixed marker slot below, so tiles stay at the same height
+            // and same-value tiles (e.g. two East winds) line up together.
             key(tick) {
                 val drawn = if (game.hasDrawn && game.hands[0].isNotEmpty()) game.hands[0].last() else null
                 val hand = game.hands[0].sortedBy { it.groupKey() }
                 var marked = false
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(62.dp),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).height(60.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.Bottom,
                 ) {
@@ -336,8 +353,11 @@ fun MahjongScreen(
                             ) {
                                 TileFace(t, Modifier.size(32.dp, 44.dp).clickable { onDiscard(t) })
                             }
-                            if (isDrawn) {
-                                Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
+                            // 固定高度标记槽：所有牌同高
+                            Box(Modifier.height(12.dp), contentAlignment = Alignment.Center) {
+                                if (isDrawn) {
+                                    Text("▼", fontSize = 10.sp, color = Color(0xFFF6C453))
+                                }
                             }
                         }
                     }
@@ -398,18 +418,19 @@ fun MahjongScreen(
     }
 
     LaunchedEffect(tick) {
-        if (game.current == 0 && game.lastDiscard != null && game.winner < 0) checkActions()
+        checkActions()
     }
 }
 
 /** 弃牌多行显示：每行最多 perRow 张（牌不缩太小），全部显示；最新一张略大；
- *  highlight=true 时最新一张加金色边框（碰/杠/和的目标牌） */
+ *  highlight=true 时最新一张加边框（碰/杠/和的目标牌），highlightColor 可区分碰(金)/和(红) */
 @Composable
 private fun OpponentDiscardRows(
     discards: List<Tile>,
     perRow: Int = 8,
     alignment: Alignment.Horizontal = Alignment.CenterHorizontally,
     highlight: Boolean = false,
+    highlightColor: Color = Color(0xFFF6C453),
     modifier: Modifier = Modifier,
 ) {
     if (discards.isEmpty()) return
@@ -421,7 +442,7 @@ private fun OpponentDiscardRows(
                     val last = ci == chunks.lastIndex && i == chunk.lastIndex
                     Box(
                         modifier = if (highlight && last) {
-                            Modifier.border(3.dp, Color(0xFFF6C453), RoundedCornerShape(4.dp))
+                            Modifier.border(3.dp, highlightColor, RoundedCornerShape(4.dp))
                         } else Modifier,
                     ) {
                         TileFace(t, Modifier.size(if (last) 18.dp else 14.dp, if (last) 26.dp else 20.dp))
@@ -457,6 +478,20 @@ private fun meldTiles(m: Meld): List<Tile> = when (m) {
     is Meld.Pung -> m.tiles
     is Meld.Kong -> m.tiles
     is Meld.Pair -> m.tiles
+}
+
+/** 一家的明刻组（AI 座位旁小牌显示：碰/杠/吃） */
+@Composable
+private fun MeldGroup(melds: List<Meld>, modifier: Modifier = Modifier) {
+    if (melds.isEmpty()) return
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        melds.forEach { m ->
+            Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
+                meldTiles(m).forEach { t -> TileFace(t, Modifier.size(12.dp, 17.dp)) }
+                Text(meldLabel(m), fontSize = 8.sp, color = Color(0xFFFFE082))
+            }
+        }
+    }
 }
 
 /** Tile face with mahjong graphic image */

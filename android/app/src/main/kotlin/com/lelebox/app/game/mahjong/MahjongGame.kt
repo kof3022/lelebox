@@ -223,9 +223,14 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** AI turn: draw, decide (win/kong), discard */
+    /** AI turn: win-by-discard first, then draw, decide (win/kong), discard */
     fun aiTurn(p: Int) {
         if (winner >= 0 || exhausted) return
+        // 抢和：别人的弃牌正好能和 → 直接和
+        val d = lastDiscard
+        if (d != null && lastDiscardPlayer != p && hands[p].count { it == d } >= 1) {
+            if (winByDiscard(p, d)) return
+        }
         draw(p)
         if (canWin(p)) { selfWin(p); return }
         if (canConcealedKong(p)) doConcealedKong(p)
@@ -233,20 +238,34 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         discard(p, discard)
     }
 
+    /**
+     * 弃牌选择：对手牌价值的启发式评分，弃最弱的一张。
+     * 保留：对子/刻子（cnt²）、可直接成顺的相邻牌（±1 强于 ±2）、
+     * 能放进更多种顺子的中张；优先弃：孤立牌、边张 1/9、无对字牌。
+     */
     private fun pickDiscard(p: Int): Tile {
-        val hand = hands[p].sortedBy { it.groupKey() }
+        val hand = hands[p]
         fun score(t: Tile): Int {
-            var s = hand.count { it == t } * 10
+            val cnt = hand.count { it == t }
+            var s = cnt * cnt * 60
             if (t.suit < 3) {
-                val left = hand.any { it.suit == t.suit && it.rank == t.rank - 1 }
-                val right = hand.any { it.suit == t.suit && it.rank == t.rank + 1 }
-                if (!left) s += 5
-                if (!right) s += 5
+                val has1 = hand.any { it.suit == t.suit && it.rank == t.rank - 1 }
+                val has2 = hand.any { it.suit == t.suit && it.rank == t.rank + 1 }
+                if (has1) s += 15
+                if (has2) s += 15
+                val hasGap1 = hand.any { it.suit == t.suit && it.rank == t.rank - 2 }
+                val hasGap2 = hand.any { it.suit == t.suit && it.rank == t.rank + 2 }
+                if (hasGap1) s += 8
+                if (hasGap2) s += 8
+                // 能组成顺子的起点数（开放性）：中张价值更高
+                val starts = (t.rank - 2..t.rank).count { it >= 1 && it + 2 <= 9 }
+                s += starts * 10
             } else {
-                s += 3
+                s += cnt * 25
+                if (cnt == 1) s += 2 // 孤张字牌价值最低
             }
             return s
         }
-        return hand.maxByOrNull { score(it) } ?: hand.first()
+        return hand.minByOrNull { score(it) } ?: hand.first()
     }
 }

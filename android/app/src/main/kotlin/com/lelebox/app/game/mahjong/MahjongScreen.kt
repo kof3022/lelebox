@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -252,14 +253,16 @@ fun MahjongScreen(
             key(tick) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (game.winner < 0 && !game.exhausted && game.current == 0) {
-                        if (canPungNow) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
-                        if (canKongNow) ElderButton(text = "杠", onClick = ::onKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
-                        if (canWinNow) ElderButton(
+                        // 碰/杠/和（吃弃牌）只在有可操作的弃牌时显示；碰/吃后 lastDiscard 已清 → 消失
+                        val actOnDiscard = game.lastDiscard != null && !game.hasDrawn
+                        if (actOnDiscard && canPungNow) ElderButton(text = "碰", onClick = ::onPung, modifier = Modifier.weight(1f), minHeight = 44.dp)
+                        if (actOnDiscard && canKongNow) ElderButton(text = "杠", onClick = ::onKong, modifier = Modifier.weight(1f), minHeight = 44.dp)
+                        if (actOnDiscard && canWinNow) ElderButton(
                             text = "和", onClick = ::onWinByDiscard, modifier = Modifier.weight(1f), minHeight = 44.dp,
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828), contentColor = Color.White),
                         )
                         // 有可操作项时无超时等待；「摸牌」= 放弃操作直接摸牌
-                        if ((canPungNow || canKongNow || canWinNow) && !game.hasDrawn) {
+                        if (actOnDiscard && (canPungNow || canKongNow || canWinNow)) {
                             ElderButton(text = "摸牌", onClick = ::onDraw, modifier = Modifier.weight(1f), minHeight = 44.dp)
                         }
                         if (game.hasDrawn && game.canWin(0)) {
@@ -273,6 +276,28 @@ fun MahjongScreen(
                 }
             }
             Spacer(Modifier.height(2.dp))
+
+            // Player's exposed melds (碰/杠/吃): the claimed tiles must be visible on the table
+            key(tick) {
+                if (game.exposed[0].isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        game.exposed[0].forEach { meld ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
+                                    meldTiles(meld).forEach { t -> TileFace(t, Modifier.size(16.dp, 22.dp)) }
+                                }
+                                Text(meldLabel(meld), fontSize = 9.sp, color = Color(0xFFFFE082))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                }
+            }
 
             // Player's own discards: 8 per row, wraps upward from the hand
             key(tick) {
@@ -410,6 +435,22 @@ private fun SeatAvatar(res: Int, modifier: Modifier = Modifier) {
     )
 }
 
+/** 明刻名称：碰/杠/吃 */
+private fun meldLabel(m: Meld): String = when (m) {
+    is Meld.Pung -> "碰"
+    is Meld.Kong -> "杠"
+    is Meld.Chow -> "吃"
+    else -> "将"
+}
+
+/** 明刻的牌张 */
+private fun meldTiles(m: Meld): List<Tile> = when (m) {
+    is Meld.Chow -> m.tiles
+    is Meld.Pung -> m.tiles
+    is Meld.Kong -> m.tiles
+    is Meld.Pair -> m.tiles
+}
+
 /** Tile face with mahjong graphic image */
 @Composable
 private fun TileFace(tile: Tile, modifier: Modifier = Modifier) {
@@ -421,15 +462,20 @@ private fun TileFace(tile: Tile, modifier: Modifier = Modifier) {
     )
 }
 
-/** Tile back image */
+/** Tile back image: light ivory (dark backs were hard to see) with a small diamond pattern */
 @Composable
 private fun TileBack(modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(R.drawable.mj_back),
-        contentDescription = null,
-        modifier = modifier.clip(RoundedCornerShape(3.dp)),
-        contentScale = ContentScale.Crop,
-    )
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(3.dp))
+            .background(Color(0xFFF3E9D4))
+            .border(1.dp, Color(0xFFCBB98F), RoundedCornerShape(3.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(7.dp).rotate(45f).background(Color(0xFFD9C9A3)),
+        )
+    }
 }
 
 /** Map Tile to drawable resource */

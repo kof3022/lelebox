@@ -223,13 +223,25 @@ class MahjongGame(seed: Long = System.currentTimeMillis()) {
         return true
     }
 
-    /** AI turn: win-by-discard first, then draw, decide (win/kong), discard */
+    /** AI turn: react to the previous discard (win/pung/kong), then draw, decide, discard */
     fun aiTurn(p: Int) {
         if (winner >= 0 || exhausted) return
-        // 抢和：别人的弃牌正好能和 → 直接和
         val d = lastDiscard
         if (d != null && lastDiscardPlayer != p && hands[p].count { it == d } >= 1) {
+            // 抢和：别人的弃牌正好能和 → 直接和
             if (winByDiscard(p, d)) return
+            // 明杠/碰：手里 ≥3 张杠，≥2 张碰（完成面子，攻势更强）
+            val cnt = hands[p].count { it == d }
+            if (cnt >= 3 && doKong(p)) {
+                val x = pickDiscard(p)
+                discard(p, x)
+                return
+            }
+            if (cnt == 2 && doPung(p)) {
+                val x = pickDiscard(p)
+                discard(p, x)
+                return
+            }
         }
         draw(p)
         if (canWin(p)) { selfWin(p); return }

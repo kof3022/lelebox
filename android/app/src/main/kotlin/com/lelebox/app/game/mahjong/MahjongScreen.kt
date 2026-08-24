@@ -230,7 +230,7 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[2].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    // 曹操：弃牌居中于正中间，明刻固定在右侧
+                    // 曹操：弃牌居中不变；明刻从弃牌第一排第8张右侧固定开始，多明刻向下排
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OpponentDiscardRows(
                             game.discards[2],
@@ -238,7 +238,7 @@ fun MahjongScreen(
                             highlight = pendingAction && game.lastDiscardPlayer == 2,
                             highlightColor = hlColor,
                         )
-                        MeldGroup(game.exposed[2], modifier = Modifier.align(Alignment.CenterEnd))
+                        MeldGroup(game.exposed[2], modifier = Modifier.align(Alignment.TopStart).padding(start = 465.dp))
                     }
                 }
                 // ---- Left seat 3 (刘备): top-anchored (avatar never moves), discards multi-row ----
@@ -254,10 +254,10 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[3].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    // 刘备：明刻在弃牌右侧（固定、留少许间隔）
-                    Row(verticalAlignment = Alignment.Bottom) {
+                    // 刘备：弃牌不变；明刻从弃牌第一排第8张右侧开始，多明刻向下排
+                    Row(verticalAlignment = Alignment.Top) {
                         OpponentDiscardRows(game.discards[3], alignment = Alignment.Start, highlight = pendingAction && game.lastDiscardPlayer == 3, highlightColor = hlColor)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(6.dp))
                         MeldGroup(game.exposed[3])
                     }
                 }
@@ -274,10 +274,10 @@ fun MahjongScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy((-4).dp)) {
                         repeat(game.hands[1].size) { TileBack(Modifier.size(14.dp, 20.dp)) }
                     }
-                    // 孙权：明刻在弃牌左侧（固定、留少许间隔）
-                    Row(verticalAlignment = Alignment.Bottom) {
+                    // 孙权：弃牌不变；明刻从弃牌第一排第8张左侧开始，多明刻向下排
+                    Row(verticalAlignment = Alignment.Top) {
                         MeldGroup(game.exposed[1])
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(6.dp))
                         OpponentDiscardRows(game.discards[1], alignment = Alignment.End, highlight = pendingAction && game.lastDiscardPlayer == 1, highlightColor = hlColor)
                     }
                 }
@@ -316,29 +316,15 @@ fun MahjongScreen(
             }
             Spacer(Modifier.height(2.dp))
 
-            // Player's exposed melds: fixed position at the LEFT
+            // Player's own discards (centered, 8/row) + melds to their right (fixed, 向上排)
             key(tick) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                    if (game.exposed[0].isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
-                            game.exposed[0].forEach { meld ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
-                                        meldTiles(meld).forEach { t -> TileFace(t, Modifier.size(16.dp, 22.dp)) }
-                                    }
-                                    Text(meldLabel(meld), fontSize = 9.sp, color = Color(0xFFFFE082))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(2.dp))
-
-            // Player's own discards: centered, directly above the hand (8/row)
-            key(tick) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    OpponentDiscardRows(game.discards[0], perRow = 8)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OpponentDiscardRows(
+                        game.discards[0],
+                        perRow = 8,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                    MeldGroup(game.exposed[0], modifier = Modifier.align(Alignment.BottomStart).padding(start = 465.dp))
                 }
             }
             Spacer(Modifier.height(2.dp))

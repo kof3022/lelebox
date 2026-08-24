@@ -136,9 +136,15 @@ class PaiJiuGameTest {
         assertTrue(g.isLeadPhase)
         assertEquals(0, g.current)
         assertEquals(0, g.leader)
-        // 玩家赢得这一墩（明牌：领出的那张，墩主牌在最上）
+        // 玩家赢得这一墩（墩主牌在最上；三家垫牌为背面条目）
         assertEquals(1, g.trickCount[0])
-        assertEquals(listOf(0 to listOf(lead)), g.tricks[0][0])
+        val trick = g.tricks[0][0]
+        assertEquals(4, trick.size) // 一墩 4 张（1 出牌 + 3 垫牌）
+        assertEquals(0, trick[0].player)
+        assertFalse(trick[0].isPass)
+        assertTrue(trick[1].isPass) // 曹操垫牌（背面）
+        assertTrue(trick[2].isPass) // 刘备垫牌
+        assertTrue(trick[3].isPass) // 孙权垫牌
     }
 
     @Test
@@ -156,9 +162,18 @@ class PaiJiuGameTest {
         g.play(1, listOf(mix9))
         g.pass(2, g.hands[2].minByOrNull { it.rank.order }!!)
         g.pass(3, g.hands[3].minByOrNull { it.rank.order }!!)
-        // 孙权赢墩：墩主（孙权）的牌在最上，玩家牌在其下
+        // 孙权赢墩：墩主（孙权）在最上，玩家牌在其下，两家垫牌背面
         assertEquals(1, g.trickCount[1])
-        assertEquals(listOf(1 to listOf(mix9), 0 to listOf(mix5)), g.tricks[1][0])
+        val trick = g.tricks[1][0]
+        assertEquals(4, trick.size)
+        assertEquals(1, trick[0].player) // 墩主孙权
+        assertFalse(trick[0].isPass)
+        assertEquals(listOf(mix9), trick[0].tiles)
+        assertEquals(0, trick[1].player) // 玩家
+        assertFalse(trick[1].isPass)
+        assertEquals(listOf(mix5), trick[1].tiles)
+        assertTrue(trick[2].isPass) // 曹操垫牌
+        assertTrue(trick[3].isPass) // 刘备垫牌
         // 玩家无墩
         assertEquals(0, g.trickCount[0])
     }

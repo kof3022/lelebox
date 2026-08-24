@@ -70,6 +70,12 @@ object PaiJiuRules {
         return a.rank
     }
 
+    /** 领出合法性：单张任意牌 / 文对（两张相同文牌）/ 至尊对 */
+    fun isLegalLead(play: PaiJiuPlay): Boolean = when (play.kind) {
+        PlayKind.SINGLE -> true
+        PlayKind.PAIR -> play.isSupreme || pairRank(play) != null
+    }
+
     /** 手牌中能接住 current 的所有出法（单张/对子），用于 UI 高亮与 AI 选牌 */
     fun legalPlays(hand: List<PaiJiuTile>, current: PaiJiuPlay): List<PaiJiuPlay> {
         val result = mutableListOf<PaiJiuPlay>()

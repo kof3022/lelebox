@@ -175,13 +175,14 @@ fun PaiJiuScreen(
                         color = Color(0xFFFFE082),
                     )
                     Spacer(Modifier.height(8.dp))
-                    // 玩家可接的牌提示（没有「过」，只有「垫牌」）
+                    // 玩家可接的牌提示（没有「过」，只有「垫牌」）；上移避免与下方按钮重合
                     if (game.current == 0 && !game.isLeadPhase) {
                         val legal = PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!)
                         Text(
                             if (legal.isEmpty()) "接不住，请点「垫牌」" else "可以出：${legal.size} 种",
                             fontSize = 14.sp,
                             color = Color(0xFFE8F0E4),
+                            modifier = Modifier.offset(y = (-26).dp),
                         )
                     }
                 }
@@ -334,10 +335,13 @@ private fun OpponentSeat(
         }
         Spacer(Modifier.height(4.dp))
         if (p == 2) {
-            // 曹操：Box 内 Column 固定（名字行→手牌→出牌），墩牌绝对定位在右上，
-            // 不参与布局流，绝不挤占手牌/出牌位置
+            // 曹操：Box 内 Column 固定且水平居中（手牌/出牌保持在屏幕中部曹操座位下），
+            // 墩牌绝对定位在右侧，不参与布局流、不挤占手牌/出牌
             Box(modifier = Modifier.fillMaxWidth()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     // 手牌行
                     Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
@@ -355,12 +359,14 @@ private fun OpponentSeat(
                         }
                     }
                 }
-                // 墩牌：绝对定位在名字行右侧下方（曹操名字居中，墩牌在其右），多墩横向、每墩竖向4张
+                // 墩牌：绝对定位在屏幕中部右侧（曹操座位下方右侧），多墩横向、每墩竖向4张
                 if (game.trickCount[p] > 0) {
                     Column(
-                        modifier = Modifier.align(Alignment.TopCenter).padding(start = 160.dp, top = 26.dp),
+                        modifier = Modifier.align(Alignment.TopCenter).padding(start = 150.dp, top = 30.dp),
                         horizontalAlignment = Alignment.Start,
                     ) {
+                        Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
+                        Spacer(Modifier.height(2.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
                             game.tricks[p].forEach { trick ->
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

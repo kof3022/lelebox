@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /** 设置页：统一卡片式分组（Editorial Luxury 暖调） */
 @Composable
@@ -87,6 +88,15 @@ fun SettingsScreen(
         Text(
             "乐龄游戏盒 v0.5.6-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
             style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "牌九牌面点阵参考 Wikimedia Commons「SVG Chinese domino sets」\n作者 Mliu92，CC BY-SA 4.0",
+            style = MaterialTheme.typography.labelMedium,
+            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

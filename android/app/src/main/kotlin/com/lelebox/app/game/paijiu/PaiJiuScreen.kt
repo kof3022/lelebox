@@ -175,14 +175,14 @@ fun PaiJiuScreen(
                         color = Color(0xFFFFE082),
                     )
                     Spacer(Modifier.height(8.dp))
-                    // 玩家可接的牌提示（没有「过」，只有「垫牌」）；上移避免与下方按钮重合
+                    // 玩家可接的牌提示（没有「过」，只有「垫牌」）；轻微上移避免与下方按钮重合
                     if (game.current == 0 && !game.isLeadPhase) {
                         val legal = PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!)
                         Text(
                             if (legal.isEmpty()) "接不住，请点「垫牌」" else "可以出：${legal.size} 种",
                             fontSize = 14.sp,
                             color = Color(0xFFE8F0E4),
-                            modifier = Modifier.offset(y = (-26).dp),
+                            modifier = Modifier.offset(y = (-10).dp),
                         )
                     }
                 }
@@ -317,11 +317,6 @@ private fun OpponentSeat(
             SeatAvatar(avatar)
             Spacer(Modifier.width(4.dp))
             Text("$name ${game.hands[p].size}张", fontSize = 14.sp, color = Color(0xFFE8F0E4))
-            // 曹操："N墩"文字与名字顶端对齐（名字行内顶部对齐）
-            if (p == 2 && game.trickCount[p] > 0) {
-                Spacer(Modifier.width(16.dp))
-                Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
-            }
             // 刘备：本轮出的牌显示在"刘备6张"右面空处
             if (p == 3 && game.lastPlayed[p].isNotEmpty()) {
                 Spacer(Modifier.width(10.dp))
@@ -430,9 +425,9 @@ private fun ZonePlay(game: PaiJiuGame, p: Int, modifier: Modifier = Modifier) {
             game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(30.dp, 48.dp)) }
         }
     } else if (game.lastPassed[p]) {
-        // 垫牌：背面显示在该家方位
+        // 垫牌：背面显示在该家方位（张数与垫牌数一致）
         Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            repeat(1) { PaiJiuTileBack(Modifier.size(24.dp, 38.dp)) }
+            repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(24.dp, 38.dp)) }
         }
     }
 }

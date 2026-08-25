@@ -185,10 +185,7 @@ fun PaiJiuScreen(
                         )
                     }
                 }
-                // 本轮出的牌：显示在台布金圈附近各家相应方位（出牌明牌大牌/垫牌背面）
-                // 曹操的出牌显示在座位手牌下方（见 OpponentSeat），此处不再重复显示
-                ZonePlay(game = game, p = 3, modifier = Modifier.align(Alignment.CenterStart).padding(start = 170.dp)) // 刘备：左（内收）
-                ZonePlay(game = game, p = 1, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 170.dp))     // 孙权：右（内收）
+                // 本轮出的牌：曹操在座位手牌下方、刘备在名字右面、孙权在头像左面（见 OpponentSeat）
                 ZonePlay(game = game, p = 0, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 200.dp)) // 玩家：下方
             }
         }
@@ -306,13 +303,47 @@ private fun OpponentSeat(
 ) {
     Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // 孙权：本轮出的牌显示在头像左侧（同一行）
+            if (p == 1 && game.lastPlayed[p].isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(18.dp, 29.dp)) }
+                }
+                Spacer(Modifier.width(10.dp))
+            } else if (p == 1 && game.lastPassed[p]) {
+                PaiJiuTileBack(Modifier.size(14.dp, 23.dp))
+                Spacer(Modifier.width(10.dp))
+            }
             SeatAvatar(avatar)
             Spacer(Modifier.width(4.dp))
             Text("$name ${game.hands[p].size}张", fontSize = 14.sp, color = Color(0xFFE8F0E4))
-            // 曹操：墩牌显示在"曹操6张"字样右侧（同排）
+            // 刘备：本轮出的牌显示在"刘备6张"右面空处
+            if (p == 3 && game.lastPlayed[p].isNotEmpty()) {
+                Spacer(Modifier.width(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(18.dp, 29.dp)) }
+                }
+            } else if (p == 3 && game.lastPassed[p]) {
+                Spacer(Modifier.width(10.dp))
+                PaiJiuTileBack(Modifier.size(14.dp, 23.dp))
+            }
+            // 曹操：墩牌显示在"曹操6张"字样右侧（同排，含牌图形；右移稍许避免遮挡）
             if (p == 2 && game.trickCount[p] > 0) {
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(16.dp))
                 Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
+                Spacer(Modifier.width(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    game.tricks[p].forEach { trick ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            trick.forEach { entry ->
+                                if (entry.isPass) {
+                                    PaiJiuTileBack(Modifier.size(11.dp, 17.dp))
+                                } else {
+                                    entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(11.dp, 17.dp)) }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         if (game.isFinished(p)) {

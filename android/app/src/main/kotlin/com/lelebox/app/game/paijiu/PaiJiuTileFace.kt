@@ -129,5 +129,5 @@ private fun pipPositions(n: Int): List<Pair<Float, Float>> = when (n) {
 }
 
 /** 便捷尺寸 */
-val PaiJiuTileWidth: Dp = 56.dp
-val PaiJiuTileHeight: Dp = 90.dp
+val PaiJiuTileWidth: Dp = 62.dp
+val PaiJiuTileHeight: Dp = 100.dp

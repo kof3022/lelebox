@@ -233,6 +233,28 @@ class PaiJiuRulesTest {
             all.groupBy { it.id }.mapValues { it.value.size })
     }
 
+    // ---------- 7. 手牌排序 ----------
+
+    @Test
+    fun `sort hand puts tian za-jiu lao-hu first`() {
+        val hand = listOf(PaiJiuTiles.BAN_DENG, PaiJiuTiles.LAO_HU, PaiJiuTiles.ZA_JIU_A, PaiJiuTiles.TIAN)
+        val sorted = PaiJiuRules.sortHand(hand)
+        // 天/杂九/老虎 优先最左（按 天>杂九>老虎 序）
+        assertEquals(TileName.TIAN, sorted[0].name)
+        assertEquals(TileName.ZA_JIU, sorted[1].name)
+        assertEquals(TileName.LAO_HU, sorted[2].name)
+        assertEquals(TileName.BAN_DENG, sorted[3].name)
+    }
+
+    @Test
+    fun `sort hand keeps pairs together`() {
+        val hand = listOf(PaiJiuTiles.TIAN, PaiJiuTiles.DI, PaiJiuTiles.TIAN, PaiJiuTiles.BAN_DENG)
+        val sorted = PaiJiuRules.sortHand(hand)
+        // 对天应在一起
+        val tianIdx = sorted.indices.filter { sorted[it].name == TileName.TIAN }
+        assertEquals(listOf(tianIdx[0], tianIdx[0] + 1), tianIdx)
+    }
+
     @Test
     fun `deals differ across seeds`() {
         val h1 = PaiJiuRules.deal(Random(1))

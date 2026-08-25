@@ -189,4 +189,39 @@ object PaiJiuRules {
         PlayKind.PAIR -> if (play.isDuiHou) "对猴" else "${play.tiles[0].name.label}对"
         PlayKind.FU_2, PlayKind.FU_3A, PlayKind.FU_3B, PlayKind.FU_4 -> play.fuName?.label ?: "副子"
     }
+
+    /**
+     * 玩家手牌排序（UI 显示顺序）：
+     * 1. 天九/杂九/老虎 优先最左（大牌突出）；
+     * 2. 其余按 天/杂/幺 三门从大到小；
+     * 3. 对子/副子成员必须显示在一起（同名相邻）。
+     */
+    fun sortHand(hand: List<PaiJiuTile>): List<PaiJiuTile> {
+        if (hand.isEmpty()) return hand
+        // 分组：同名牌一组（对子/副子成员），组内保持
+        val groups = hand.groupBy { it.name }.values.toMutableList()
+        // 组排序权重：天九/杂九/老虎 组优先（order 越小越大；大牌优先左）
+        val priorityNames = setOf(TileName.ZA_JIU, TileName.LAO_HU, TileName.TIAN)
+        val result = mutableListOf<PaiJiuTile>()
+        // 优先组：天、杂九、老虎（含其副子/对子成员），按 天九>杂九>老虎 序
+        val priorityOrder = listOf(TileName.TIAN, TileName.ZA_JIU, TileName.LAO_HU)
+        for (pn in priorityOrder) {
+            val g = groups.firstOrNull { it.isNotEmpty() && it[0].name == pn }
+            if (g != null) {
+                result.addAll(g.sortedBy { it.name.order })
+                groups.remove(g)
+            }
+        }
+        // 其余组按门序（天>杂>幺）→ 门内 order 从小到大
+        val suitOrder = mapOf(TileSuit.TIAN to 0, TileSuit.ZA to 1, TileSuit.YAO to 2)
+        groups.sortedWith(
+            compareBy(
+                { suitOrder[it[0].suit] ?: 3 },
+                { it[0].name.order },
+            )
+        ).forEach { g ->
+            result.addAll(g.sortedBy { it.name.order })
+        }
+        return result
+    }
 }

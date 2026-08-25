@@ -302,7 +302,7 @@ private fun OpponentSeat(
     horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
 ) {
     Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.Top) {
             // 孙权：本轮出的牌显示在头像左侧（同一行）
             if (p == 1 && game.lastPlayed[p].isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -310,12 +310,17 @@ private fun OpponentSeat(
                 }
                 Spacer(Modifier.width(10.dp))
             } else if (p == 1 && game.lastPassed[p]) {
-                PaiJiuTileBack(Modifier.size(14.dp, 23.dp))
+                repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(14.dp, 23.dp)) }
                 Spacer(Modifier.width(10.dp))
             }
             SeatAvatar(avatar)
             Spacer(Modifier.width(4.dp))
             Text("$name ${game.hands[p].size}张", fontSize = 14.sp, color = Color(0xFFE8F0E4))
+            // 曹操："N墩"文字与名字顶端对齐（名字行内顶部对齐）
+            if (p == 2 && game.trickCount[p] > 0) {
+                Spacer(Modifier.width(16.dp))
+                Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
+            }
             // 刘备：本轮出的牌显示在"刘备6张"右面空处
             if (p == 3 && game.lastPlayed[p].isNotEmpty()) {
                 Spacer(Modifier.width(10.dp))
@@ -324,46 +329,53 @@ private fun OpponentSeat(
                 }
             } else if (p == 3 && game.lastPassed[p]) {
                 Spacer(Modifier.width(10.dp))
-                PaiJiuTileBack(Modifier.size(14.dp, 23.dp))
+                repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(14.dp, 23.dp)) }
             }
-            // 曹操：墩牌显示在"曹操6张"字样右侧（同排，含牌图形；右移稍许避免遮挡）
-            if (p == 2 && game.trickCount[p] > 0) {
-                Spacer(Modifier.width(16.dp))
-                Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
-                Spacer(Modifier.width(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    game.tricks[p].forEach { trick ->
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            trick.forEach { entry ->
-                                if (entry.isPass) {
-                                    PaiJiuTileBack(Modifier.size(11.dp, 17.dp))
-                                } else {
-                                    entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(11.dp, 17.dp)) }
+        }
+        Spacer(Modifier.height(4.dp))
+        if (p == 2) {
+            // 曹操：Box 内 Column 固定（名字行→手牌→出牌），墩牌绝对定位在右上，
+            // 不参与布局流，绝不挤占手牌/出牌位置
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // 手牌行
+                    Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                        repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
+                    }
+                    // 本轮出的牌：靠近手牌下方（固定位置）
+                    if (game.lastPlayed[p].isNotEmpty()) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(20.dp, 32.dp)) }
+                        }
+                    } else if (game.lastPassed[p]) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(16.dp, 26.dp)) }
+                        }
+                    }
+                }
+                // 墩牌：绝对定位在名字行右侧下方（曹操名字居中，墩牌在其右），多墩横向、每墩竖向4张
+                if (game.trickCount[p] > 0) {
+                    Column(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(start = 160.dp, top = 26.dp),
+                        horizontalAlignment = Alignment.Start,
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                            game.tricks[p].forEach { trick ->
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    trick.forEach { entry ->
+                                        if (entry.isPass) {
+                                            PaiJiuTileBack(Modifier.size(12.dp, 19.dp))
+                                        } else {
+                                            entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
-        if (game.isFinished(p)) {
-            Text("第${game.rankOf(p)}名", fontSize = 14.sp, color = Color(0xFFF6C453))
-        }
-        Spacer(Modifier.height(4.dp))
-        if (p == 2) {
-            // 曹操：手牌行（下方显示本轮出的牌）
-            Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
-            }
-            // 本轮出的牌：靠近手牌下方（唯一显示处）
-            if (game.lastPlayed[p].isNotEmpty()) {
-                Spacer(Modifier.height(3.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(20.dp, 32.dp)) }
-                }
-            } else if (game.lastPassed[p]) {
-                Spacer(Modifier.height(3.dp))
-                PaiJiuTileBack(Modifier.size(16.dp, 26.dp))
             }
         } else {
             // 刘备/孙权：牌背 + 下方墩
@@ -396,6 +408,9 @@ private fun OpponentSeat(
         }
     }
 }
+
+/** 垫牌张数（垫牌数量与首家出牌数相同；无明面牌时按 1） */
+private fun passTileCount(game: PaiJiuGame): Int = game.currentPlay?.count ?: 1
 
 /** 本轮出的牌：显示在台布金圈附近各家方位（出牌明牌大牌 / 垫牌背面） */
 @Composable
@@ -458,7 +473,7 @@ private fun PlayerHandArea(
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(12.dp))
         // 手牌行：手牌居中，右侧显示墩（多墩横向、每墩竖向4张）
         Row(
             modifier = Modifier.fillMaxWidth(),

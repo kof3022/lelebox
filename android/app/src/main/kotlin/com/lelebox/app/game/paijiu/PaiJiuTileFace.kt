@@ -85,7 +85,7 @@ internal fun DrawScope.drawDominoTile(tile: PaiJiuTile, showName: Boolean) {
     // 牌名（大字，老年友好）
     if (showName) {
         drawContext.canvas.nativeCanvas.drawText(
-            tile.name,
+            tile.name.label,
             size.width / 2,
             size.height * 0.52f,
             android.graphics.Paint().apply {

@@ -2,120 +2,191 @@ package com.lelebox.app.game.paijiu
 
 import kotlin.random.Random
 
-/** 出牌类型：单张 / 对子（文对或至尊对） */
-enum class PlayKind { SINGLE, PAIR }
+/**
+ * 牌九（打天九）出牌牌型与大小规则（v2：三门/副子）。
+ *
+ * 出牌数：每一圈每个玩家的出牌数必须相同。
+ * 牌型：
+ * - 单张：1 张
+ * - 对子：相同名字 2 张（猴六+猴三 = 对猴，也是对子）
+ * - 副子 2 张：天九（天+杂九）/ 地八（地+杂八）/ 人七（人+杂七）/ 鹅五（鹅+杂五）
+ * - 副子 3 张类型 A：2 天门 + 1 对应杂（2天+杂九 = 三天九…）
+ * - 副子 3 张类型 B：1 天门 + 2 对应杂（天+2杂九 = 三天九…）
+ * - 副子 4 张：2 天门 + 2 对应杂（2天+2杂九 = 四天九…）
+ *
+ * 大小：同门比大小；副子同名内按 天九>地八>人七>鹅五；3 张两种类型互不比；不同张数互不比。
+ */
+enum class PlayKind { SINGLE, PAIR, FU_2, FU_3A, FU_3B, FU_4 }
 
-/** 一手出的牌（1 张单牌 或 2 张对子） */
-data class PaiJiuPlay(val tiles: List<PaiJiuTile>) {
-    init { require(tiles.size == 1 || tiles.size == 2) { "出牌必须是单张或对子" } }
+/** 副子名称（天九/地八/人七/鹅五） */
+enum class FuName(val label: String, val order: Int) {
+    TIAN_JIU("天九", 1),
+    DI_BA("地八", 2),
+    REN_QI("人七", 3),
+    E_WU("鹅五", 4),
+}
 
-    val kind: PlayKind get() = if (tiles.size == 1) PlayKind.SINGLE else PlayKind.PAIR
+/** 一手出的牌 */
+data class PaiJiuPlay(
+    val tiles: List<PaiJiuTile>,
+    val kind: PlayKind,
+    val fuName: FuName? = null,
+) {
+    /** 出牌数（一圈内各家必须相同） */
+    val count: Int get() = tiles.size
 
-    /** 是否为至尊对（猴王对） */
-    val isSupreme: Boolean
-        get() = kind == PlayKind.PAIR && PaiJiuTiles.isSupremePair(tiles[0], tiles[1])
+    /** 是否为对猴 */
+    val isDuiHou: Boolean
+        get() = kind == PlayKind.PAIR && PaiJiuTiles.isDuiHou(tiles[0], tiles[1])
+
+    /** 是否为对子（含对猴） */
+    val isPair: Boolean get() = kind == PlayKind.PAIR
 
     companion object {
-        fun single(t: PaiJiuTile) = PaiJiuPlay(listOf(t))
-        fun pair(a: PaiJiuTile, b: PaiJiuTile) = PaiJiuPlay(listOf(a, b))
+        fun single(t: PaiJiuTile) = PaiJiuPlay(listOf(t), PlayKind.SINGLE)
     }
 }
 
-/**
- * 牌九（天九）规则引擎：接牌判定 + 出牌合法性。
- *
- * 核心规则「大食小」：
- * 1. 同类型才能接：文牌跟文牌、武牌跟武牌，文武不互接。
- * 2. 单张只能被单张接，对子只能被对子接。
- * 3. 文牌按等级比大小；武牌按组别（点数）比大小，同组平级后出者不能接。
- * 4. 至尊对（[1:2]+[2:4]）最大，可压天牌，只能用至尊对接。
- */
 object PaiJiuRules {
 
-    /** 判定 play 是否能接住 current（须同类型且更大） */
-    fun canBeat(play: PaiJiuPlay, current: PaiJiuPlay): Boolean {
-        if (play.kind != current.kind) return false // 单张/对子不互接
+    /** 分析一手牌属于什么牌型；非法组合返回 null */
+    fun classify(tiles: List<PaiJiuTile>): PaiJiuPlay? {
+        val n = tiles.size
+        return when (n) {
+            1 -> PaiJiuPlay(tiles, PlayKind.SINGLE)
+            2 -> classifyPairOrFu2(tiles)
+            3 -> classifyFu3(tiles)
+            4 -> classifyFu4(tiles)
+            else -> null
+        }
+    }
 
+    /** 2 张：对子（同名 或 对猴）或 副子2 */
+    private fun classifyPairOrFu2(tiles: List<PaiJiuTile>): PaiJiuPlay? {
+        val (a, b) = tiles
+        // 对子：同名（对猴也算同名？不——猴六+猴三是不同名但对子。对子=同名2张 或 对猴）
+        if (a.name == b.name) return PaiJiuPlay(tiles, PlayKind.PAIR)
+        if (PaiJiuTiles.isDuiHou(a, b)) return PaiJiuPlay(tiles, PlayKind.PAIR)
+        // 副子2：天九/地八/人七/鹅五
+        val fu = fu2Name(a, b) ?: return null
+        return PaiJiuPlay(tiles, PlayKind.FU_2, fu)
+    }
+
+    /** 副子2：天+杂九 / 地+杂八 / 人+杂七 / 鹅+杂五 */
+    private fun fu2Name(a: PaiJiuTile, b: PaiJiuTile): FuName? {
+        val tian = listOf(TileName.TIAN, TileName.DI, TileName.REN, TileName.E)
+        val za = listOf(TileName.ZA_JIU, TileName.ZA_BA, TileName.ZA_QI, TileName.ZA_WU)
+        for (i in 0..3) {
+            val (t, z) = tian[i] to za[i]
+            val names = setOf(a.name, b.name)
+            if (names == setOf(t, z)) {
+                return FuName.entries[i]
+            }
+        }
+        return null
+    }
+
+    /** 3 张：类型 A（2 天门 + 1 对应杂）或 类型 B（1 天门 + 2 对应杂） */
+    private fun classifyFu3(tiles: List<PaiJiuTile>): PaiJiuPlay? {
+        val tianNames = listOf(TileName.TIAN, TileName.DI, TileName.REN, TileName.E)
+        val zaNames = listOf(TileName.ZA_JIU, TileName.ZA_BA, TileName.ZA_QI, TileName.ZA_WU)
+        for (i in 0..3) {
+            val t = tianNames[i]; val z = zaNames[i]
+            val tCnt = tiles.count { it.name == t }
+            val zCnt = tiles.count { it.name == z }
+            if (tCnt + zCnt != 3) continue
+            if (tCnt == 2 && zCnt == 1) return PaiJiuPlay(tiles, PlayKind.FU_3A, FuName.entries[i])
+            if (tCnt == 1 && zCnt == 2) return PaiJiuPlay(tiles, PlayKind.FU_3B, FuName.entries[i])
+        }
+        return null
+    }
+
+    /** 4 张：2 天门 + 2 对应杂 */
+    private fun classifyFu4(tiles: List<PaiJiuTile>): PaiJiuPlay? {
+        val tianNames = listOf(TileName.TIAN, TileName.DI, TileName.REN, TileName.E)
+        val zaNames = listOf(TileName.ZA_JIU, TileName.ZA_BA, TileName.ZA_QI, TileName.ZA_WU)
+        for (i in 0..3) {
+            val t = tianNames[i]; val z = zaNames[i]
+            if (tiles.count { it.name == t } == 2 && tiles.count { it.name == z } == 2) {
+                return PaiJiuPlay(tiles, PlayKind.FU_4, FuName.entries[i])
+            }
+        }
+        return null
+    }
+
+    /** 判定 play 是否能管上 current（同张数、同类型、更大） */
+    fun canBeat(play: PaiJiuPlay, current: PaiJiuPlay): Boolean {
+        if (play.count != current.count) return false // 出牌数必须相同
+        if (play.kind != current.kind) return false // 不同类型不能互管
         return when (play.kind) {
             PlayKind.SINGLE -> canBeatSingle(play.tiles[0], current.tiles[0])
             PlayKind.PAIR -> canBeatPair(play, current)
+            PlayKind.FU_2, PlayKind.FU_3A, PlayKind.FU_3B, PlayKind.FU_4 -> {
+                // 副子：同名内比 FuName
+                val a = play.fuName ?: return false
+                val b = current.fuName ?: return false
+                if (a == b) return false // 同级平
+                a.order < b.order
+            }
         }
     }
 
-    /** 单张接单张 */
+    /** 单张：同门内比大小；不同门不能比 */
     fun canBeatSingle(my: PaiJiuTile, cur: PaiJiuTile): Boolean {
-        if (my.suit != cur.suit) return false // 文武不互接
-        if (my.rank == cur.rank) return false // 同组/同级平，后出者不能接
-        return my.rank.order < cur.rank.order
+        if (my.suit != cur.suit) return false // 不同门不能比较
+        if (my.name == cur.name) return false
+        return my.name.order < cur.name.order
     }
 
-    /** 对子接对子 */
-    fun canBeatPair(my: PaiJiuPlay, cur: PaiJiuPlay): Boolean {
-        // 至尊对最大：可压一切对子
-        if (my.isSupreme) return true
-        // 对方是至尊对：只有至尊对能接
-        if (cur.isSupreme) return false
-        // 普通对子：两张同文牌组成（文对）
-        val myRank = pairRank(my) ?: return false
-        val curRank = pairRank(cur) ?: return false
-        if (myRank == curRank) return false
-        return myRank.order < curRank.order
+    /** 对子：对猴（首家）特殊处理在 Game 层；这里仅比较普通对子 */
+    private fun canBeatPair(my: PaiJiuPlay, cur: PaiJiuPlay): Boolean {
+        // 对猴规则：首家出对猴其他家不能管上；非首家出对猴不能管其他两张。
+        // 这里统一返回 false（对猴的特殊处理在 Game 层：首家出对猴时其余只能垫牌）。
+        if (my.isDuiHou || cur.isDuiHou) return false
+        val a = my.tiles[0].name
+        val b = cur.tiles[0].name
+        if (a == b) return false
+        // 对子只按首张牌的门+序比较？——对子由两张同名牌组成，首张即代表
+        if (my.tiles[0].suit != cur.tiles[0].suit) return false
+        return my.tiles[0].name.order < cur.tiles[0].name.order
     }
 
-    /** 普通对子的等级：两张相同文牌 → 返回该文牌等级；非文对返回 null */
-    private fun pairRank(p: PaiJiuPlay): TileRank? {
-        val (a, b) = p.tiles
-        if (a.suit != TileSuit.CIVIL || b.suit != TileSuit.CIVIL) return null
-        if (a.rank != b.rank) return null
-        return a.rank
-    }
-
-    /** 领出合法性：单张任意牌 / 文对（两张相同文牌）/ 至尊对 */
-    fun isLegalLead(play: PaiJiuPlay): Boolean = when (play.kind) {
-        PlayKind.SINGLE -> true
-        PlayKind.PAIR -> play.isSupreme || pairRank(play) != null
-    }
-
-    /** 手牌中能接住 current 的所有出法（单张/对子），用于 UI 高亮与 AI 选牌 */
+    /** 手牌中能管上 current 的所有出法 */
     fun legalPlays(hand: List<PaiJiuTile>, current: PaiJiuPlay): List<PaiJiuPlay> {
         val result = mutableListOf<PaiJiuPlay>()
-        when (current.kind) {
-            PlayKind.SINGLE -> {
-                for (t in hand) {
-                    val play = PaiJiuPlay.single(t)
-                    if (canBeat(play, current)) result.add(play)
-                }
-            }
-            PlayKind.PAIR -> {
-                // 至尊对
-                val supA = hand.firstOrNull { it == PaiJiuTiles.SUPREME_A }
-                val supB = hand.firstOrNull { it == PaiJiuTiles.SUPREME_B }
-                if (supA != null && supB != null && canBeat(PaiJiuPlay.pair(supA, supB), current)) {
-                    result.add(PaiJiuPlay.pair(supA, supB))
-                }
-                // 普通文对
-                val byRank = hand.groupBy { it.rank }.filterKeys { it != TileRank.SUPREME }
-                for ((rank, tiles) in byRank) {
-                    if (tiles.size >= 2 && rank.suitIsCivil()) {
-                        val play = PaiJiuPlay.pair(tiles[0], tiles[1])
-                        if (canBeat(play, current)) result.add(play)
-                    }
-                }
-            }
+        // 尝试从手牌中选 current.count 张组成能管上的牌型
+        val indices = hand.indices.toList()
+        combinations(hand, indices, current.count).forEach { combo ->
+            val play = classify(combo) ?: return@forEach
+            if (play.kind == current.kind && canBeat(play, current)) result.add(play)
         }
-        return result.distinct()
+        return result.distinctBy { it.tiles.map { t -> t.name } }
     }
 
-    /** 发牌：32 张洗牌后每人 8 张（0=玩家，1..3=电脑） */
+    /** 枚举 hand 中所有 count 张组合（用于找可管上的出法） */
+    private fun combinations(hand: List<PaiJiuTile>, indices: List<Int>, count: Int): List<List<PaiJiuTile>> {
+        if (count == 0) return listOf(emptyList())
+        if (indices.size < count) return emptyList()
+        val result = mutableListOf<List<PaiJiuTile>>()
+        for (i in indices.indices) {
+            val rest = indices.subList(i + 1, indices.size)
+            combinations(hand, rest, count - 1).forEach { tail ->
+                result.add(listOf(hand[indices[i]]) + tail)
+            }
+        }
+        return result
+    }
+
+    /** 发牌：32 张洗牌后每人 8 张 */
     fun deal(rng: Random = Random.Default): Array<List<PaiJiuTile>> {
         val shuffled = PaiJiuTiles.FULL_SET.shuffled(rng)
         return Array(4) { p -> shuffled.subList(p * 8, p * 8 + 8).toList() }
     }
 
-    private fun TileRank.suitIsCivil(): Boolean = when (this) {
-        TileRank.HEAVEN, TileRank.EARTH, TileRank.MAN, TileRank.HARMONY, TileRank.PLUM,
-        TileRank.LONG_THREE, TileRank.BENCH, TileRank.TIGER_HEAD, TileRank.RED_HEAD,
-        TileRank.HIGH_LEG, TileRank.LING_LING -> true
-        else -> false
+    /** 牌型中文名（UI 用） */
+    fun playLabel(play: PaiJiuPlay): String = when (play.kind) {
+        PlayKind.SINGLE -> play.tiles[0].name.label
+        PlayKind.PAIR -> if (play.isDuiHou) "对猴" else "${play.tiles[0].name.label}对"
+        PlayKind.FU_2, PlayKind.FU_3A, PlayKind.FU_3B, PlayKind.FU_4 -> play.fuName?.label ?: "副子"
     }
 }

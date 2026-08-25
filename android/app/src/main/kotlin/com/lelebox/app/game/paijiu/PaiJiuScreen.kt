@@ -90,7 +90,7 @@ fun PaiJiuScreen(
 
     /** 玩家出牌（按选中索引取牌） */
     fun playerPlay() {
-        val hand = game.hands[0].sortedBy { it.rank.order }
+        val hand = game.hands[0].sortedBy { it.name.order }
         if (selectedIdx in hand.indices) {
             if (game.play(0, listOf(hand[selectedIdx]))) {
                 Sfx.click(context); selectedIdx = -1; refresh()
@@ -100,8 +100,9 @@ fun PaiJiuScreen(
 
     /** 玩家垫牌：自动垫最小价值牌（垫牌不明牌，牌背显示） */
     fun playerPass() {
-        val t = PaiJiuAi.choosePass(game.hands[0], difficulty)
-        if (game.pass(0, t)) { Sfx.click(context); selectedIdx = -1; refresh() }
+        val cur = game.currentPlay ?: return
+        val tiles = PaiJiuAi.choosePass(game.hands[0], cur, difficulty)
+        if (game.pass(0, tiles)) { Sfx.click(context); selectedIdx = -1; refresh() }
     }
 
     // AI 回合循环：单个常驻协程按 current 推进。
@@ -119,7 +120,7 @@ fun PaiJiuScreen(
                         game.play(p, PaiJiuAi.chooseLead(game.hands[p], difficulty))
                     } else {
                         val f = PaiJiuAi.chooseFollow(game.hands[p], game.currentPlay!!, difficulty)
-                        if (f != null) game.play(p, f) else game.pass(p, PaiJiuAi.choosePass(game.hands[p], difficulty))
+                        if (f != null) game.play(p, f) else game.pass(p, PaiJiuAi.choosePass(game.hands[p], game.currentPlay!!, difficulty))
                     }
                     // 状态确实变化才刷新（AI 行动成功）
                     if (game.current != beforeCurrent || game.currentPlay != beforePlay || game.gameOver) {
@@ -221,20 +222,33 @@ fun PaiJiuScreen(
                 modifier = Modifier.align(Alignment.Center).padding(16.dp),
             ) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    val myRank = game.rankOf(0)
-                    Text(
-                        when (myRank) {
-                            1 -> "🏆 你第一名，真厉害！"
-                            2 -> "😊 你第二名，不错！"
-                            3 -> "👍 你第三名，再试试！"
-                            else -> "💪 你最后一名，下次加油！"
-                        },
-                        fontSize = 22.sp,
-                    )
+                    // 得牌 + 结牌类型 + 扇
+                    val dePaiName = if (game.dePai == 0) "你" else seatName(game.dePai)
+                    val jieText = when (game.jieType) {
+                        PaiJiuGame.JieType.DA_DUI -> "大对结"
+                        PaiJiuGame.JieType.HOU -> "猴结"
+                        PaiJiuGame.JieType.XIAO_DUI -> "小对结"
+                        else -> ""
+                    }
+                    val fanText = (0..3).mapNotNull { q -> game.fanOf(q)?.let { "${seatName(q)} $it" } }.joinToString("、")
+                    val resultText = if (game.dePai == 0) {
+                        "🎉 你得牌！赢 ${game.settlement} 墩！"
+                    } else {
+                        "😊 $dePaiName 得牌，赢 ${game.settlement} 墩"
+                    }
+                    Text(resultText, fontSize = 22.sp, color = Color(0xFFB23A3A))
+                    if (jieText.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text("结牌：$jieText", fontSize = 15.sp, color = Color(0xFF6E6A63))
+                    }
+                    if (fanText.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text("扇：$fanText", fontSize = 15.sp, color = Color(0xFF6E6A63))
+                    }
                     Spacer(Modifier.height(8.dp))
-                    // 完整名次
-                    game.finished.forEachIndexed { idx, p ->
-                        Text("第${idx + 1}名：${seatName(p)}", fontSize = 15.sp, color = Color(0xFF6E6A63))
+                    // 各家墩数
+                    (0..3).forEach { p ->
+                        Text("${seatName(p)}：${game.trickCount[p]}墩", fontSize = 15.sp, color = Color(0xFF6E6A63))
                     }
                     Spacer(Modifier.height(14.dp))
                     ElderButton(text = "再来一局", onClick = { game.newRound(); selectedIdx = -1; refresh() }, minHeight = 44.dp)
@@ -250,11 +264,7 @@ fun PaiJiuScreen(
 }
 
 /** 桌面牌型文字 */
-private fun currentPlayLabel(play: PaiJiuPlay): String = when {
-    play.isSupreme -> "至尊对"
-    play.kind == PlayKind.PAIR -> "${play.tiles[0].name} 对"
-    else -> play.tiles[0].name
-}
+private fun currentPlayLabel(play: PaiJiuPlay): String = PaiJiuRules.playLabel(play)
 
 /** 座位头像（圆形裁剪，复用麻将头像素材） */
 @Composable
@@ -313,7 +323,7 @@ private fun OpponentSeat(
                                 Row(
                                     modifier = if (isOwner) Modifier.border(1.dp, Color(0xFFFFE082), RoundedCornerShape(3.dp)) else Modifier,
                                 ) {
-                                    entry.tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                    entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
                                 }
                             }
                         }
@@ -390,7 +400,7 @@ private fun PlayerHandArea(
         ) {
             // 手牌（居中）
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
-                val sorted = game.hands[0].sortedBy { it.rank.order }
+                val sorted = game.hands[0].sortedBy { it.name.order }
                 sorted.forEachIndexed { idx, t ->
                     val isSelected = idx == selectedIdx
                     val canUse = game.current == 0 && !game.gameOver && (
@@ -427,7 +437,7 @@ private fun PlayerHandArea(
                                         Row(
                                             modifier = if (isOwner) Modifier.border(1.dp, Color(0xFFFFE082), RoundedCornerShape(3.dp)) else Modifier,
                                         ) {
-                                            entry.tiles.forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
+                                            entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(12.dp, 19.dp)) }
                                         }
                                     }
                                 }

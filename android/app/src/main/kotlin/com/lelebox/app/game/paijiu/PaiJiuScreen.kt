@@ -61,8 +61,8 @@ fun PaiJiuScreen(
     val activity = androidx.compose.ui.platform.LocalContext.current.findActivity()
     val game = remember { PaiJiuGame() }
     var tick by remember { mutableIntStateOf(0) }
-    // 玩家当前选中的牌（用索引，避免同值牌（对象引用相同）无法区分/误取消选中）
-    var selectedIdx by remember { mutableIntStateOf(-1) }
+    // 玩家当前选中的牌（多选：对子/副子需选 2-4 张；用索引集合）
+    var selectedIndices by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var autoPass by remember { mutableStateOf(false) }
     val difficulty = PaiJiuDifficulty.MEDIUM
 
@@ -88,21 +88,24 @@ fun PaiJiuScreen(
 
     fun seatName(p: Int): String = when (p) { 0 -> "你"; 1 -> "孙权"; 2 -> "曹操"; 3 -> "刘备"; else -> "?" }
 
-    /** 玩家出牌（按选中索引取牌） */
+    /** 玩家出牌/管上：用选中的多张牌 */
     fun playerPlay() {
         val hand = game.hands[0].sortedBy { it.name.order }
-        if (selectedIdx in hand.indices) {
-            if (game.play(0, listOf(hand[selectedIdx]))) {
-                Sfx.click(context); selectedIdx = -1; refresh()
-            }
+        val tiles = selectedIndices.sorted().mapNotNull { hand.getOrNull(it) }
+        if (tiles.isEmpty()) return
+        if (game.play(0, tiles)) {
+            Sfx.click(context); selectedIndices = emptySet(); refresh()
         }
     }
 
-    /** 玩家垫牌：自动垫最小价值牌（垫牌不明牌，牌背显示） */
+    /** 玩家垫牌：用选中的多张（数量须=首家出牌数）；未选或数量不足则自动垫 */
     fun playerPass() {
         val cur = game.currentPlay ?: return
-        val tiles = PaiJiuAi.choosePass(game.hands[0], cur, difficulty)
-        if (game.pass(0, tiles)) { Sfx.click(context); selectedIdx = -1; refresh() }
+        val hand = game.hands[0].sortedBy { it.name.order }
+        val selected = selectedIndices.sorted().mapNotNull { hand.getOrNull(it) }
+        val tiles = if (selected.size == cur.count) selected
+        else PaiJiuAi.choosePass(game.hands[0], cur, difficulty)
+        if (game.pass(0, tiles)) { Sfx.click(context); selectedIndices = emptySet(); refresh() }
     }
 
     // AI 回合循环：单个常驻协程按 current 推进。
@@ -182,10 +185,11 @@ fun PaiJiuScreen(
                     }
                 }
                 // 本轮出的牌：显示在台布金圈附近各家相应方位（出牌明牌大牌/垫牌背面）
-                ZonePlay(game = game, p = 2, modifier = Modifier.align(Alignment.TopCenter).padding(top = 118.dp))   // 曹操：上方
-                ZonePlay(game = game, p = 3, modifier = Modifier.align(Alignment.CenterStart).padding(start = 60.dp)) // 刘备：左
-                ZonePlay(game = game, p = 1, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 60.dp))     // 孙权：右
-                ZonePlay(game = game, p = 0, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 210.dp)) // 玩家：下方
+                // 位置避开三家座位墩牌区域：曹操 ZonePlay 靠下、刘备/孙权内收贴近金圈
+                ZonePlay(game = game, p = 2, modifier = Modifier.align(Alignment.TopCenter).padding(top = 200.dp))   // 曹操：上方（避开墩）
+                ZonePlay(game = game, p = 3, modifier = Modifier.align(Alignment.CenterStart).padding(start = 170.dp)) // 刘备：左（内收）
+                ZonePlay(game = game, p = 1, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 170.dp))     // 孙权：右（内收）
+                ZonePlay(game = game, p = 0, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 200.dp)) // 玩家：下方
             }
         }
         // 返回按钮（左上角小圆钮，放 key(tick) 外避免重组导致点击失灵）
@@ -206,8 +210,10 @@ fun PaiJiuScreen(
             key(tick) {
                 PlayerHandArea(
                     game = game,
-                    selectedIdx = selectedIdx,
-                    onSelect = { idx -> selectedIdx = if (selectedIdx == idx) -1 else idx },
+                    selectedIndices = selectedIndices,
+                    onSelect = { idx ->
+                        selectedIndices = if (idx in selectedIndices) selectedIndices - idx else selectedIndices + idx
+                    },
                     onPlay = ::playerPlay,
                     onPass = ::playerPass,
                 )
@@ -246,12 +252,19 @@ fun PaiJiuScreen(
                         Text("扇：$fanText", fontSize = 15.sp, color = Color(0xFF6E6A63))
                     }
                     Spacer(Modifier.height(8.dp))
-                    // 各家墩数
+                    // 各家结算（输/赢墩数）
                     (0..3).forEach { p ->
-                        Text("${seatName(p)}：${game.trickCount[p]}墩", fontSize = 15.sp, color = Color(0xFF6E6A63))
+                        val detail = game.settlementDetail.getOrElse(p) { 0 }
+                        val detailText = when {
+                            p == game.dePai -> "（得牌）赢 ${game.settlement} 墩"
+                            detail > 0 -> "赢 $detail 墩"
+                            detail < 0 -> "输 ${-detail} 墩"
+                            else -> "平"
+                        }
+                        Text("${seatName(p)}：${game.trickCount[p]}墩 $detailText", fontSize = 15.sp, color = Color(0xFF6E6A63))
                     }
                     Spacer(Modifier.height(14.dp))
-                    ElderButton(text = "再来一局", onClick = { game.newRound(); selectedIdx = -1; refresh() }, minHeight = 44.dp)
+                    ElderButton(text = "再来一局", onClick = { game.newRound(); selectedIndices = emptySet(); refresh() }, minHeight = 44.dp)
                     Spacer(Modifier.height(6.dp))
                     ElderButton(text = "退出", onClick = onBack, minHeight = 44.dp,
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
@@ -357,7 +370,7 @@ private fun ZonePlay(game: PaiJiuGame, p: Int, modifier: Modifier = Modifier) {
 @Composable
 private fun PlayerHandArea(
     game: PaiJiuGame,
-    selectedIdx: Int,
+    selectedIndices: Set<Int>,
     onSelect: (Int) -> Unit,
     onPlay: () -> Unit,
     onPass: () -> Unit,
@@ -375,14 +388,20 @@ private fun PlayerHandArea(
                 Text("${if (game.isLeadPhase) "${seatName2(game.leader)} 领出中…" else "等待接牌…"}",
                     fontSize = 14.sp, color = Color(0xFFE8F0E4))
             } else if (game.isLeadPhase) {
-                if (selectedIdx >= 0) {
+                if (selectedIndices.isNotEmpty()) {
                     ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
                 } else {
-                    Text("选一张牌出（先出牌的人）", fontSize = 14.sp, color = Color(0xFFE8F0E4))
+                    Text("选牌出（单张/对子/副子）", fontSize = 14.sp, color = Color(0xFFE8F0E4))
                 }
             } else {
-                if (selectedIdx >= 0) {
-                    ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
+                // 接牌阶段：管上（选中的牌更大）或垫牌
+                val cur = game.currentPlay
+                val sorted = game.hands[0].sortedBy { it.name.order }
+                val selected = selectedIndices.sorted().mapNotNull { sorted.getOrNull(it) }
+                val canGuan = cur != null && selected.size == cur.count &&
+                    PaiJiuRules.classify(selected)?.let { PaiJiuRules.canBeat(it, cur) } == true
+                if (selectedIndices.isNotEmpty() && canGuan) {
+                    ElderButton(text = "管上", onClick = onPlay, minHeight = 44.dp)
                     Spacer(Modifier.width(8.dp))
                 }
                 ElderButton(text = "垫牌", onClick = onPass, minHeight = 44.dp,
@@ -398,11 +417,11 @@ private fun PlayerHandArea(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom,
         ) {
-            // 手牌（居中）
+            // 手牌（居中，多选）
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.Bottom) {
                 val sorted = game.hands[0].sortedBy { it.name.order }
                 sorted.forEachIndexed { idx, t ->
-                    val isSelected = idx == selectedIdx
+                    val isSelected = idx in selectedIndices
                     val canUse = game.current == 0 && !game.gameOver && (
                         game.isLeadPhase || PaiJiuRules.legalPlays(game.hands[0], game.currentPlay!!).any { it.tiles.contains(t) }
                         )

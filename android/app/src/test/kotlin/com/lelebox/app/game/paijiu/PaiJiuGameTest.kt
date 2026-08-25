@@ -1,4 +1,4 @@
-package com.lelebox.app.game.paijiu
+﻿package com.lelebox.app.game.paijiu
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,11 +8,19 @@ import org.junit.Test
 /** M1v2：对局状态机（领出/管上/垫牌/墩/得牌/结牌/扇/结算） */
 class PaiJiuGameTest {
 
+    /** 强制玩家(0)先手领出（newRound 随机领出，测试需固定） */
+    private fun PaiJiuGame.forcePlayerLead() {
+        leader = 0
+        current = 0
+        currentPlay = null
+        currentPlayPlayer = -1
+    }
+
     @Test
-    fun `new round deals 8 each and player leads`() {
+    fun `new round deals 8 each and someone leads`() {
         val g = PaiJiuGame(seed = 7)
         for (p in 0..3) assertEquals(8, g.hands[p].size)
-        assertEquals(0, g.current)
+        assertTrue(g.current in 0..3)
         assertTrue(g.isLeadPhase)
         assertFalse(g.gameOver)
     }
@@ -20,6 +28,7 @@ class PaiJiuGameTest {
     @Test
     fun `player leads a single`() {
         val g = PaiJiuGame(seed = 7)
+        g.forcePlayerLead()
         val t = g.hands[0][0]
         assertTrue(g.play(0, listOf(t)))
         assertEquals(1, g.currentPlay?.count)
@@ -30,6 +39,7 @@ class PaiJiuGameTest {
     @Test
     fun `player leads a pair`() {
         val g = PaiJiuGame(seed = 7)
+        g.forcePlayerLead()
         val hand = g.hands[0].toList()
         val pair = hand.groupBy { it.name }.entries.firstOrNull { it.value.size >= 2 }
         if (pair != null) {
@@ -45,7 +55,8 @@ class PaiJiuGameTest {
     @Test
     fun `can beat with larger same-kind`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         // 玩家领地牌，孙权用天牌管上
         val di = PaiJiuTiles.DI
         val tian = PaiJiuTiles.TIAN
@@ -59,7 +70,8 @@ class PaiJiuGameTest {
     @Test
     fun `cannot beat with different door`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         val di = PaiJiuTiles.DI
         val zaJiu = PaiJiuTiles.ZA_JIU_A
         g.hands[0].clear(); g.hands[0].addAll(listOf(di) + PaiJiuTiles.FULL_SET.take(7))
@@ -71,7 +83,8 @@ class PaiJiuGameTest {
     @Test
     fun `pass requires same count and not bigger`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         val di = PaiJiuTiles.DI
         val tian = PaiJiuTiles.TIAN
         val ren = PaiJiuTiles.REN
@@ -89,7 +102,8 @@ class PaiJiuGameTest {
     @Test
     fun `dui hou lead cannot be beaten`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         val hou6 = PaiJiuTiles.HOU_LIU
         val hou3 = PaiJiuTiles.HOU_SAN
         val tian = PaiJiuTiles.TIAN
@@ -106,7 +120,8 @@ class PaiJiuGameTest {
     @Test
     fun `round ends winner leads next and trick counted`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         val lead = g.hands[0][0]
         g.play(0, listOf(lead))
         // 三家垫牌（同数量、更小）
@@ -124,7 +139,8 @@ class PaiJiuGameTest {
     @Test
     fun `pair round gives 2 tricks`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         val pair = g.hands[0].groupBy { it.name }.entries.firstOrNull { it.value.size >= 2 }
         if (pair == null) return // 无对子跳过
         val (a, b) = pair.value
@@ -141,7 +157,8 @@ class PaiJiuGameTest {
     @Test
     fun `de pai when hand empty and last trick`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         // 玩家只有 1 张牌，领出后赢墩即得牌
         g.hands[0].clear()
         g.hands[0].add(PaiJiuTiles.TIAN)
@@ -159,7 +176,8 @@ class PaiJiuGameTest {
     @Test
     fun `jie type da dui for tian pair`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         // 玩家最后出对天 → 大对结
         g.hands[0].clear()
         g.hands[0].addAll(listOf(PaiJiuTiles.TIAN, PaiJiuTiles.TIAN))
@@ -175,7 +193,8 @@ class PaiJiuGameTest {
     @Test
     fun `jie type hou for dui hou`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         g.hands[0].clear()
         g.hands[0].addAll(listOf(PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN))
         assertTrue(g.play(0, listOf(PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN)))
@@ -190,7 +209,8 @@ class PaiJiuGameTest {
     @Test
     fun `settlement normal 4 base`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         // 手动构造：得牌玩家（0），其他三家各 3 墩（<4 输 1 墩）
         g.dePai = 0
         g.jieType = PaiJiuGame.JieType.NONE
@@ -207,7 +227,8 @@ class PaiJiuGameTest {
     @Test
     fun `settlement da dui base 6`() {
         val g = PaiJiuGame(seed = 7)
-        g.newRound()
+                g.newRound()
+        g.forcePlayerLead()
         g.dePai = 0
         g.jieType = PaiJiuGame.JieType.DA_DUI
         g.trickCount[0] = 6
@@ -244,3 +265,4 @@ class PaiJiuGameTest {
         println("player depai rate: $wins/100")
     }
 }
+

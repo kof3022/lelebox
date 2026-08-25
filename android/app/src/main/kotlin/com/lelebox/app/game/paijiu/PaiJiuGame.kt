@@ -79,6 +79,9 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
     /** 完局结算结果（得牌玩家赢墩数；-1=未结算） */
     var settlement = -1
 
+    /** 完局结算：各家净输赢（正=赢墩，负=输墩）；得牌者 = 三家输的总和 */
+    var settlementDetail = IntArray(4)
+
     enum class JieType { NONE, DA_DUI, HOU, XIAO_DUI }
 
     init { newRound() }
@@ -89,8 +92,9 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
             hands[p].clear()
             hands[p].addAll(dealt[p])
         }
-        current = 0
-        leader = 0
+        // 随机一家领出（首家）
+        leader = rng.nextInt(4)
+        current = leader
         currentPlay = null
         currentPlayPlayer = -1
         acted.fill(false)
@@ -106,6 +110,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         duiHouFour = false
         gameOver = false
         settlement = -1
+        settlementDetail = IntArray(4) // 各家净输赢（正=赢，负=输）
     }
 
     /** 是否处于领出阶段 */
@@ -314,7 +319,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         return result
     }
 
-    /** 完局结算：得牌玩家赢墩数 */
+    /** 完局结算：得牌玩家赢墩数 + 各家净输赢 */
     fun settle(): Int {
         if (dePai < 0) return 0
         // 保不输基准
@@ -324,6 +329,12 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
             else -> 4
         }
         val fan = fanOf(dePai)
+        // 扇玩家（得牌以外）
+        val fanPlayer: Int = if (fan != null && fan != "八扇")
+            (0..3).firstOrNull { q -> q != dePai && fanOf(q) != null } ?: -1
+        else -1
+
+        val detail = IntArray(4)
         // 八扇特殊
         if (fan == "八扇") {
             val per = when (jieType) {
@@ -331,32 +342,38 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
                 JieType.DA_DUI, JieType.HOU -> 10
                 else -> 8
             }
+            for (p in 0..3) {
+                detail[p] = if (p == dePai) per * 3 else -per
+            }
+            settlementDetail = detail
             return per * 3
         }
-        var totalWin = 0
+        // 普通/六扇/七扇：各家相对基准的输赢
         for (p in 0..3) {
-            if (p == dePai) continue
+            if (p == dePai) { detail[p] = 0; continue }
             var diff = trickCount[p] - base
-            // 六扇/七扇：得牌与扇玩家之外两家多输；扇玩家加分
-            val fanPlayer = (0..3).firstOrNull { q -> q != dePai && fanOf(q) != null }
-            if (fanPlayer != null && fan != null) {
-                if (p != fanPlayer) diff -= when (fan) {
+            // 六扇/七扇：得牌与扇玩家之外两家多输 1/2 墩
+            if (fanPlayer >= 0 && p != fanPlayer) {
+                diff -= when (fan) {
                     "六扇" -> 1
                     "七扇" -> 2
                     else -> 0
                 }
             }
-            if (diff < 0) totalWin += -diff
-        }
-        // 六扇/七扇扇玩家加分
-        if (fan != null) {
-            val fanPlayer = (0..3).firstOrNull { q -> q != dePai && fanOf(q) != null } ?: return totalWin
-            totalWin += when (fan) {
-                "六扇" -> 2
-                "七扇" -> 4
-                else -> 0
+            // 扇玩家加分
+            if (p == fanPlayer) {
+                diff += when (fan) {
+                    "六扇" -> 2
+                    "七扇" -> 4
+                    else -> 0
+                }
             }
+            detail[p] = diff
         }
+        // 得牌者赢 = 三家输的总和（只算输的）
+        val totalWin = (0..3).filter { it != dePai }.sumOf { maxOf(0, -detail[it]) }
+        detail[dePai] = totalWin
+        settlementDetail = detail
         return totalWin
     }
 

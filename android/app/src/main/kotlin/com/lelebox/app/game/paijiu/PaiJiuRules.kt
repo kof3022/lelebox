@@ -194,34 +194,70 @@ object PaiJiuRules {
      * 玩家手牌排序（UI 显示顺序）：
      * 1. 天九/杂九/老虎 优先最左（大牌突出）；
      * 2. 其余按 天/杂/幺 三门从大到小；
-     * 3. 对子/副子成员必须显示在一起（同名相邻）。
+     * 3. 对子成员相邻；
+     * 4. 副子配对相邻：地牌+杂八 → 杂八紧挨地牌右侧；人牌+杂七 → 杂七紧挨人牌右侧；
+     *    天牌+杂九、鹅牌+杂五 同理（杂牌显示在天门牌右侧）。
      */
     fun sortHand(hand: List<PaiJiuTile>): List<PaiJiuTile> {
         if (hand.isEmpty()) return hand
-        // 分组：同名牌一组（对子/副子成员），组内保持
-        val groups = hand.groupBy { it.name }.values.toMutableList()
-        // 组排序权重：天九/杂九/老虎 组优先（order 越小越大；大牌优先左）
-        val priorityNames = setOf(TileName.ZA_JIU, TileName.LAO_HU, TileName.TIAN)
+        // 副子配对：天门牌 → 对应杂牌
+        val fuPair = mapOf(
+            TileName.TIAN to TileName.ZA_JIU,
+            TileName.DI to TileName.ZA_BA,
+            TileName.REN to TileName.ZA_QI,
+            TileName.E to TileName.ZA_WU,
+        )
+        val remaining = hand.toMutableList()
         val result = mutableListOf<PaiJiuTile>()
-        // 优先组：天、杂九、老虎（含其副子/对子成员），按 天九>杂九>老虎 序
+
+        // 优先组：天、杂九、老虎（大牌）
         val priorityOrder = listOf(TileName.TIAN, TileName.ZA_JIU, TileName.LAO_HU)
+        // 先处理优先级组内的副子配对：天牌 + 杂九 一起放最左
         for (pn in priorityOrder) {
-            val g = groups.firstOrNull { it.isNotEmpty() && it[0].name == pn }
-            if (g != null) {
-                result.addAll(g.sortedBy { it.name.order })
-                groups.remove(g)
+            if (remaining.none { it.name == pn }) continue
+            // 天门牌（天）与其对应杂牌（杂九）配对
+            if (pn == TileName.TIAN) {
+                val tian = remaining.filter { it.name == TileName.TIAN }
+                val zaJiu = remaining.filter { it.name == TileName.ZA_JIU }
+                // 天+杂九 配对（多张则 天、杂九、天、杂九 交替相邻）
+                val pairs = maxOf(tian.size, zaJiu.size)
+                for (i in 0 until pairs) {
+                    if (i < tian.size) { result.add(tian[i]); remaining.remove(tian[i]) }
+                    if (i < zaJiu.size) { result.add(zaJiu[i]); remaining.remove(zaJiu[i]) }
+                }
+            } else if (pn == TileName.ZA_JIU && remaining.any { it.name == TileName.ZA_JIU }) {
+                // 剩余杂九（天牌已配对完）靠左
+                remaining.filter { it.name == TileName.ZA_JIU }.forEach { result.add(it); remaining.remove(it) }
+            } else if (pn == TileName.LAO_HU) {
+                remaining.filter { it.name == TileName.LAO_HU }.forEach { result.add(it); remaining.remove(it) }
             }
         }
-        // 其余组按门序（天>杂>幺）→ 门内 order 从小到大
+
+        // 其余：按门（天>杂>幺）→ 门内 order；副子配对相邻（天门牌后紧跟对应杂牌）
         val suitOrder = mapOf(TileSuit.TIAN to 0, TileSuit.ZA to 1, TileSuit.YAO to 2)
-        groups.sortedWith(
-            compareBy(
-                { suitOrder[it[0].suit] ?: 3 },
-                { it[0].name.order },
-            )
-        ).forEach { g ->
-            result.addAll(g.sortedBy { it.name.order })
+        // 收集剩余天门牌与其对应杂牌
+        val tianSuit = remaining.filter { it.suit == TileSuit.TIAN }
+        val used = mutableSetOf<PaiJiuTile>()
+        // 天门牌按 order 排序，逐个处理：同名多张相邻；若有对应杂牌则杂牌紧跟
+        for (t in tianSuit.sortedBy { it.name.order }) {
+            if (t in used) continue
+            // 同名全部
+            val same = remaining.filter { it.name == t.name }
+            same.forEach { result.add(it); used.add(it) }
+            // 对应杂牌紧跟
+            fuPair[t.name]?.let { zaName ->
+                val zas = remaining.filter { it.name == zaName }
+                zas.forEach { result.add(it); used.add(it) }
+            }
         }
+        // 剩余杂门牌
+        remaining.filter { it.suit == TileSuit.ZA && it !in used }
+            .sortedBy { it.name.order }
+            .forEach { result.add(it); used.add(it) }
+        // 剩余幺门牌
+        remaining.filter { it.suit == TileSuit.YAO && it !in used }
+            .sortedBy { it.name.order }
+            .forEach { result.add(it); used.add(it) }
         return result
     }
 }

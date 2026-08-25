@@ -256,6 +256,25 @@ class PaiJiuRulesTest {
     }
 
     @Test
+    fun `sort hand puts fu pairs adjacent with za next to tian`() {
+        // 地牌+杂八 → 杂八紧挨地牌右侧
+        val hand = listOf(PaiJiuTiles.ZA_BA_A, PaiJiuTiles.DI, PaiJiuTiles.BAN_DENG, PaiJiuTiles.REN)
+        val sorted = PaiJiuRules.sortHand(hand)
+        val diIdx = sorted.indexOfFirst { it.name == TileName.DI }
+        // 地牌后紧跟杂八
+        assertEquals(TileName.ZA_BA, sorted[diIdx + 1].name)
+    }
+
+    @Test
+    fun `sort hand tian plus za-jiu adjacent at front`() {
+        val hand = listOf(PaiJiuTiles.ZA_JIU_A, PaiJiuTiles.TIAN, PaiJiuTiles.DI)
+        val sorted = PaiJiuRules.sortHand(hand)
+        // 天在最左，杂九紧跟（副子配对）
+        assertEquals(TileName.TIAN, sorted[0].name)
+        assertEquals(TileName.ZA_JIU, sorted[1].name)
+    }
+
+    @Test
     fun `deals differ across seeds`() {
         val h1 = PaiJiuRules.deal(Random(1))
         val h2 = PaiJiuRules.deal(Random(2))

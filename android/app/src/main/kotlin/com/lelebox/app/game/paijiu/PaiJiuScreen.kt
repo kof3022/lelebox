@@ -186,8 +186,7 @@ fun PaiJiuScreen(
                     }
                 }
                 // 本轮出的牌：显示在台布金圈附近各家相应方位（出牌明牌大牌/垫牌背面）
-                // 位置避开三家座位墩牌区域：曹操 ZonePlay 靠下、刘备/孙权内收贴近金圈
-                ZonePlay(game = game, p = 2, modifier = Modifier.align(Alignment.TopCenter).padding(top = 200.dp))   // 曹操：上方（避开墩）
+                // 曹操的出牌显示在座位手牌下方（见 OpponentSeat），此处不再重复显示
                 ZonePlay(game = game, p = 3, modifier = Modifier.align(Alignment.CenterStart).padding(start = 170.dp)) // 刘备：左（内收）
                 ZonePlay(game = game, p = 1, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 170.dp))     // 孙权：右（内收）
                 ZonePlay(game = game, p = 0, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 200.dp)) // 玩家：下方
@@ -310,46 +309,22 @@ private fun OpponentSeat(
             SeatAvatar(avatar)
             Spacer(Modifier.width(4.dp))
             Text("$name ${game.hands[p].size}张", fontSize = 14.sp, color = Color(0xFFE8F0E4))
+            // 曹操：墩牌显示在"曹操6张"字样右侧（同排）
+            if (p == 2 && game.trickCount[p] > 0) {
+                Spacer(Modifier.width(8.dp))
+                Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
+            }
         }
         if (game.isFinished(p)) {
             Text("第${game.rankOf(p)}名", fontSize = 14.sp, color = Color(0xFFF6C453))
         }
         Spacer(Modifier.height(4.dp))
         if (p == 2) {
-            // 曹操专属：手牌行 + 右侧墩牌同排；本轮出的牌显示在手牌下方
-            Row(verticalAlignment = Alignment.Top) {
-                // 手牌（牌背）
-                Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
-                    repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
-                }
-                // 右侧墩牌（同排）
-                if (game.trickCount[p] > 0) {
-                    Spacer(Modifier.width(8.dp))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))
-                        Spacer(Modifier.height(2.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
-                            game.tricks[p].forEach { trick ->
-                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    trick.forEach { entry ->
-                                        if (entry.isPass) {
-                                            PaiJiuTileBack(Modifier.size(13.dp, 20.dp))
-                                        } else {
-                                            val isOwner = entry.player == p
-                                            Row(
-                                                modifier = if (isOwner) Modifier.border(1.dp, Color(0xFFFFE082), RoundedCornerShape(3.dp)) else Modifier,
-                                            ) {
-                                                entry.play?.tiles.orEmpty().forEach { t -> PaiJiuTileFace(t, Modifier.size(13.dp, 20.dp)) }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            // 曹操：手牌行（下方显示本轮出的牌）
+            Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
             }
-            // 本轮出的牌：显示在手牌下方
+            // 本轮出的牌：靠近手牌下方（唯一显示处）
             if (game.lastPlayed[p].isNotEmpty()) {
                 Spacer(Modifier.height(3.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -432,13 +407,11 @@ private fun PlayerHandArea(
                 Text("${if (game.isLeadPhase) "${seatName2(game.leader)} 领出中…" else "等待接牌…"}",
                     fontSize = 14.sp, color = Color(0xFFE8F0E4))
             } else if (game.isLeadPhase) {
-                if (selectedIndices.isNotEmpty()) {
-                    ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
-                } else {
-                    Text("选牌出（单张/对子/副子）", fontSize = 14.sp, color = Color(0xFFE8F0E4))
-                }
+                // 领出：初始/选中都显示「出牌」
+                ElderButton(text = "出牌", onClick = onPlay, minHeight = 44.dp)
             } else {
-                // 接牌阶段：管上（选中的牌更大）或垫牌
+                // 接牌阶段：按钮文字随选中牌大小变化
+                // 选中且能管上 → 「管上」；否则 → 「垫牌」
                 val cur = game.currentPlay
                 val sorted = PaiJiuRules.sortHand(game.hands[0])
                 val selected = selectedIndices.sorted().mapNotNull { sorted.getOrNull(it) }
@@ -446,12 +419,12 @@ private fun PlayerHandArea(
                     PaiJiuRules.classify(selected)?.let { PaiJiuRules.canBeat(it, cur) } == true
                 if (selectedIndices.isNotEmpty() && canGuan) {
                     ElderButton(text = "管上", onClick = onPlay, minHeight = 44.dp)
-                    Spacer(Modifier.width(8.dp))
+                } else {
+                    ElderButton(text = "垫牌", onClick = onPass, minHeight = 44.dp,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface))
                 }
-                ElderButton(text = "垫牌", onClick = onPass, minHeight = 44.dp,
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurface))
             }
         }
         Spacer(Modifier.height(6.dp))

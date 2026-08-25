@@ -317,13 +317,6 @@ private fun OpponentSeat(
             SeatAvatar(avatar)
             Spacer(Modifier.width(4.dp))
             Text("$name ${game.hands[p].size}张", fontSize = 14.sp, color = Color(0xFFE8F0E4))
-            // 曹操：本轮垫牌显示在名字右侧（顶端对齐名字）
-            if (p == 2 && game.lastPassed[p]) {
-                Spacer(Modifier.width(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(14.dp, 23.dp)) }
-                }
-            }
             // 刘备：本轮出的牌显示在"刘备6张"右面空处
             if (p == 3 && game.lastPlayed[p].isNotEmpty()) {
                 Spacer(Modifier.width(10.dp))
@@ -348,18 +341,23 @@ private fun OpponentSeat(
                     Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
                         repeat(game.hands[p].size) { PaiJiuTileBack(Modifier.size(15.dp, 22.dp)) }
                     }
-                    // 本轮出的牌：靠近手牌下方（固定位置；垫牌已显示在名字右侧）
+                    // 本轮出的牌/垫牌：靠近手牌下方（固定位置）
                     if (game.lastPlayed[p].isNotEmpty()) {
                         Spacer(Modifier.height(3.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             game.lastPlayed[p].forEach { t -> PaiJiuTileFace(t, Modifier.size(20.dp, 32.dp)) }
                         }
+                    } else if (game.lastPassed[p]) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            repeat(passTileCount(game)) { PaiJiuTileBack(Modifier.size(16.dp, 26.dp)) }
+                        }
                     }
                 }
-                // 墩牌：绝对定位在屏幕中部右侧（曹操座位下方右侧），多墩横向、每墩竖向排列
+                // 墩牌：绝对定位在名字行右侧、顶端对齐曹操名字（top=0），多墩横向、每墩竖向排列
                 if (game.trickCount[p] > 0) {
                     Column(
-                        modifier = Modifier.align(Alignment.TopCenter).padding(start = 150.dp, top = 30.dp),
+                        modifier = Modifier.align(Alignment.TopCenter).padding(start = 150.dp, top = 0.dp),
                         horizontalAlignment = Alignment.Start,
                     ) {
                         Text("${game.trickCount[p]}墩", fontSize = 14.sp, color = Color(0xFFFFE082))

@@ -2,6 +2,7 @@ package com.lelebox.app.game.sudoku
 
 import android.content.SharedPreferences
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -138,6 +140,21 @@ private fun SudokuBoard(
     val errors = current.indices.filter { current[it] != 0 && current[it] != solved[it] }.toSet()
     val won = current.all { it != 0 } && errors.isEmpty()
     val fullWithErrors = current.all { it != 0 } && !won
+
+    // 选中格子后：同行、同列、同九宫格的格子 → 相关格（淡蓝高亮，帮用户看出关联）
+    val related = selected?.let { sel ->
+        val sr = sel / 9
+        val sc = sel % 9
+        val br = sr / 3 * 3
+        val bc = sc / 3 * 3
+        (0 until 81).filter { i ->
+            if (i == sel) false else {
+                val r = i / 9
+                val c = i % 9
+                r == sr || c == sc || (r in br until br + 3 && c in bc until bc + 3)
+            }
+        }.toSet()
+    } ?: emptySet()
 
     // 完成音效
     LaunchedEffect(won) {
@@ -293,6 +310,7 @@ private fun SudokuBoard(
                                 isGiven = pos in givens,
                                 isError = pos in errors,
                                 isSelected = selected == pos,
+                                isRelated = pos in related,
                                 candidates = cands[pos].orEmpty(),
                                 index = pos,
                                 onClick = { selected = pos },
@@ -303,6 +321,19 @@ private fun SudokuBoard(
                         }
                     }
                 }
+            }
+            // 九宫格黑线：第 3、6 行/列处画黑色边线（正常粗细，突出 3x3 宫格）
+            Canvas(Modifier.matchParentSize()) {
+                val line = 2.dp.toPx()
+                val x1 = size.width / 3f
+                val x2 = x1 * 2f
+                val y1 = size.height / 3f
+                val y2 = y1 * 2f
+                val color = Color(0xFF3B3B3B)
+                drawLine(color, Offset(x1, 0f), Offset(x1, size.height), line)
+                drawLine(color, Offset(x2, 0f), Offset(x2, size.height), line)
+                drawLine(color, Offset(0f, y1), Offset(size.width, y1), line)
+                drawLine(color, Offset(0f, y2), Offset(size.width, y2), line)
             }
         }
 
@@ -447,6 +478,7 @@ private fun SudokuCell(
     isGiven: Boolean,
     isError: Boolean,
     isSelected: Boolean,
+    isRelated: Boolean,
     candidates: Set<Int>,
     index: Int,
     onClick: () -> Unit,
@@ -455,6 +487,7 @@ private fun SudokuCell(
     val bg = when {
         isError -> ErrorSoft
         isSelected -> Color(0xFFFFF8E1)
+        isRelated -> Color(0xFFE3EDF7) // 淡雾蓝：同行/列/宫的关联格
         else -> if (isGiven) Color(0xFFF0EDE6) else Color.White
     }
     val desc = when {

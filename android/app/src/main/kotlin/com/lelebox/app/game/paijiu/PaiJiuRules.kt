@@ -194,7 +194,7 @@ object PaiJiuRules {
      * 玩家手牌排序（UI 显示顺序）：
      * 1. 天九/杂九/老虎 优先最左（大牌突出）；
      * 2. 其余按 天/杂/幺 三门从大到小；
-     * 3. 对子成员相邻；
+     * 3. 对子成员相邻（含对猴：猴六+猴三 必须靠在一起，杂五不能夹中间）；
      * 4. 副子配对相邻：地牌+杂八 → 杂八紧挨地牌右侧；人牌+杂七 → 杂七紧挨人牌右侧；
      *    天牌+杂九、鹅牌+杂五 同理（杂牌显示在天门牌右侧）。
      */
@@ -251,9 +251,17 @@ object PaiJiuRules {
             }
         }
         // 剩余杂门牌
-        remaining.filter { it.suit == TileSuit.ZA && it !in used }
+        val zaList = remaining.filter { it.suit == TileSuit.ZA && it !in used }
             .sortedBy { it.name.order }
-            .forEach { result.add(it); used.add(it) }
+            .toMutableList()
+        // 对猴（猴六+猴三）必须相邻：杂五不能夹在中间
+        val hou6Idx = zaList.indexOfFirst { it.name == TileName.HOU_LIU }
+        val hou3 = zaList.firstOrNull { it.name == TileName.HOU_SAN }
+        if (hou6Idx >= 0 && hou3 != null) {
+            zaList.remove(hou3)
+            zaList.add(zaList.indexOfFirst { it.name == TileName.HOU_LIU } + 1, hou3)
+        }
+        zaList.forEach { result.add(it); used.add(it) }
         // 剩余幺门牌
         remaining.filter { it.suit == TileSuit.YAO && it !in used }
             .sortedBy { it.name.order }

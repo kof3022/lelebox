@@ -1,7 +1,8 @@
-﻿package com.lelebox.app.game.paijiu
+package com.lelebox.app.game.paijiu
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -239,6 +240,167 @@ class PaiJiuGameTest {
         g.settlement = g.settle()
         // 三家各 5 墩 <6 输 1 → 得牌赢 3
         assertEquals(3, g.settlement)
+    }
+
+    @Test
+    fun `settlement zero-sum includes winners not just losses`() {
+        // 用户报告：得牌(0)、孙权(1)5墩赢1、曹操(2)0墩输4、刘备(3)0墩输4 → 应赢 4+4-1=7（旧实现错算为 8）
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 3
+        g.trickCount[1] = 5 // 孙权 入一（5 墩 > 基准 4，赢 1 墩）
+        g.trickCount[2] = 0
+        g.trickCount[3] = 0
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals(7, g.settlement)
+        assertEquals(0, g.settlementDetail.sum()) // 零和
+        assertEquals(1, g.settlementDetail[1])
+        assertEquals(-4, g.settlementDetail[2])
+        assertEquals(-4, g.settlementDetail[3])
+    }
+
+    @Test
+    fun `settlement liu fan gives depai bonus and stays zero-sum`() {
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 6
+        g.trickCount[1] = 1
+        g.trickCount[2] = 1
+        g.trickCount[3] = 0
+        g.trickOrder.clear()
+        g.trickOrder.addAll(listOf(0, 0, 0, 0, 0, 0, 1, 2)) // 连赢前 6 张
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals("六扇", g.fanOf(0))
+        // 三家各多输 1：1-4-1=-4、1-4-1=-4、0-4-1=-5 → 得牌 13
+        assertEquals(13, g.settlement)
+        assertEquals(0, g.settlementDetail.sum())
+    }
+
+    @Test
+    fun `settlement qi fan gives depai bonus and stays zero-sum`() {
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 7
+        g.trickCount[1] = 1
+        g.trickCount[2] = 0
+        g.trickCount[3] = 0
+        g.trickOrder.clear()
+        g.trickOrder.addAll(listOf(0, 0, 0, 0, 0, 0, 0, 1)) // 连赢前 7 张
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals("七扇", g.fanOf(0))
+        // 三家各多输 2：1-4-2=-5、-6、-6 → 得牌 17
+        assertEquals(17, g.settlement)
+        assertEquals(0, g.settlementDetail.sum())
+    }
+
+    @Test
+    fun `settlement liu fan goes to fan player not depai`() {
+        // 用户报告：你(0)2墩得牌、曹操(2)六扇、孙权(1)刘备(3)0墩
+        // → 刘/孙各输5、曹操赢4、你得牌赢6（扇奖归扇主；得牌者不变）
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 2
+        g.trickCount[1] = 0
+        g.trickCount[2] = 6
+        g.trickCount[3] = 0
+        g.trickOrder.clear()
+        g.trickOrder.addAll(listOf(2, 2, 2, 2, 2, 2, 0, 0)) // 曹操连赢前 6 张
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals("六扇", g.fanOf(2))
+        assertEquals(0, g.settlementDetail.sum()) // 零和
+        assertEquals(6, g.settlement)
+        assertEquals(6, g.settlementDetail[0])  // 你得牌 6
+        assertEquals(-5, g.settlementDetail[1]) // 孙权 -5
+        assertEquals(4, g.settlementDetail[2])  // 曹操 +4
+        assertEquals(-5, g.settlementDetail[3]) // 刘备 -5
+    }
+
+    @Test
+    fun `settlement qi fan goes to fan player not depai`() {
+        // 用户报告：你(0)1墩得牌、曹操(2)七扇、刘/孙0墩
+        // → 刘/孙各输6、曹操赢7、你得牌赢5
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 1
+        g.trickCount[1] = 0
+        g.trickCount[2] = 7
+        g.trickCount[3] = 0
+        g.trickOrder.clear()
+        g.trickOrder.addAll(listOf(2, 2, 2, 2, 2, 2, 2, 0)) // 曹操连赢前 7 张
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals("七扇", g.fanOf(2))
+        assertEquals(0, g.settlementDetail.sum())
+        assertEquals(5, g.settlement)
+        assertEquals(5, g.settlementDetail[0])
+        assertEquals(-6, g.settlementDetail[1])
+        assertEquals(7, g.settlementDetail[2])
+        assertEquals(-6, g.settlementDetail[3])
+    }
+
+    @Test
+    fun `settlement ba fan special pays per to losers`() {
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 8
+        g.trickOrder.clear()
+        g.trickOrder.addAll(List(8) { 0 }) // 赢满 8 张
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertEquals("八扇", g.fanOf(0))
+        assertEquals(24, g.settlement) // 三家各输 8 → 得牌 8×3
+        assertEquals(0, g.settlementDetail.sum())
+        assertEquals(-8, g.settlementDetail[1])
+        assertEquals(24, g.settlementDetail[0])
+    }
+
+    @Test
+    fun `fan counts cards not dun count dui hou 4 dun only 2 cards`() {
+        // 用户规则：扇看「出的牌数」不看墩数。
+        // 孙权(1) 出对猴(2张)获4墩 + 天九(2张)获2墩 = 墩数 6，但只出了 4 张牌 → 不算六扇
+        val g = PaiJiuGame(seed = 7)
+                g.newRound()
+        g.forcePlayerLead()
+        g.dePai = 0
+        g.jieType = PaiJiuGame.JieType.NONE
+        g.trickCount[0] = 2
+        g.trickCount[1] = 6 // 对猴4 + 天九2 = 6 墩（但只 4 张）
+        g.trickCount[2] = 0
+        g.trickCount[3] = 0
+        g.trickOrder.clear()
+        // 出牌顺序按张数：孙权 2+2=4 张，第 5 张起才是他家的
+        g.trickOrder.addAll(listOf(1, 1, 1, 1, 0, 0, 2, 3))
+        g.gameOver = true
+        g.settlement = g.settle()
+        assertNull(g.fanOf(1)) // 墩数 6 但只有 4 张 → 不算六扇
+        // 无扇 → 普通基准结算：孙权 6-4=+2、你得牌赢 6、曹/刘各-4
+        assertEquals(0, g.settlementDetail.sum()) // 零和
+        assertEquals(6, g.settlementDetail[0])
+        assertEquals(2, g.settlementDetail[1])
+        assertEquals(-4, g.settlementDetail[2])
+        assertEquals(-4, g.settlementDetail[3])
     }
 
     @Test

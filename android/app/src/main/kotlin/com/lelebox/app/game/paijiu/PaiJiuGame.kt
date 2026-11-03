@@ -13,7 +13,7 @@ import kotlin.random.Random
  *    → 最后出牌者赢墩（墩数 = 每人出的牌数），领出下一轮。
  * 5. 对猴：首家出对猴 → 其他家不能管上只能垫；且若其他家都还没墩，对猴算 4 墩，否则 2 墩。
  * 6. 得牌：手牌出完且最后赢墩 → 得牌；按最后出的牌判 大对结/猴结/小对结。
- * 7. 扇：打满 8 墩时按前六/前七/全部判定 六扇/七扇/八扇。
+ * 7. 扇：按出的牌数判定（前六/前七/全部 8 张，不按墩数——对猴 2 张算 4 墩但只算 2 张）。
  * 8. 结算：得牌以外三家按保不输墩数（普通4/大对结猴结6/小对结5）核算，输家补得牌。
  */
 class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
@@ -57,6 +57,9 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
 
     /** 各家累计墩数（每墩的"张数/4"累加：1张=1墩、2张=2墩…） */
     val trickCount = IntArray(4)
+
+    /** 每张牌赢家（按出牌顺序展开：一墩 2/3/4 张则同一赢家重复对应次数），扇判定用（按张数，不按墩数） */
+    val trickOrder = mutableListOf<Int>()
 
     /** 结牌顺序（先出完的在前；得牌者最后） */
     val finished = mutableListOf<Int>()
@@ -104,6 +107,7 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         lastPlayed.forEach { it.clear() }
         lastPassed.fill(false)
         trickCount.fill(0)
+        trickOrder.clear()
         finished.clear()
         dePai = -1
         jieType = JieType.NONE
@@ -230,6 +234,8 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
             roundEntries.filter { it.player != roundWinner }.forEach { ordered.add(it) }
             tricks[roundWinner].add(ordered)
             trickCount[roundWinner] += value
+            // 扇判定按「出的牌数」：一墩里的每张牌记一次赢家（对猴 2 张只记 2 次，尽管墩数算 4）
+            repeat(winPlay?.count ?: 1) { trickOrder.add(roundWinner) }
         }
         roundEntries.clear()
         lastPlayed.forEach { it.clear() }
@@ -294,48 +300,32 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
         }
     }
 
-    /** 扇判定：六扇/七扇/八扇（需打满 8 墩） */
+    /** 扇判定：六扇/七扇/八扇 —— 按「出的牌数」判定（不按墩数）：
+     *  六扇=连赢前 6 张、七扇=连赢前 7 张、八扇=赢满 8 张。
+     *  对猴虽算 4 墩，但只算 2 张牌，因此不影响扇的张数判定。 */
     fun fanOf(p: Int): String? {
-        if (totalTricks != 8) return null
-        // 按墩的获得顺序展开：trickCount 只累计总数，需要每墩归属——用 tricks[p] 记录
-        // 简化：检查该玩家是否获得"前 N 墩"——用每墩的赢家（每墩 RoundEntry 第一项是墩主）
-        val winners = trickWinners()
-        if (winners.size != 8) return null
-        val all8 = winners.all { it == p }
-        if (all8) return "八扇"
-        val first7 = winners.take(7).all { it == p }
-        if (first7 && winners[7] != p) return "七扇"
-        val first6 = winners.take(6).all { it == p }
-        if (first6 && winners[6] != p) return "六扇"
+        if (trickOrder.isEmpty()) return null
+        if (trickOrder.size >= 8 && trickOrder.take(8).all { it == p }) return "八扇"
+        if (trickOrder.take(7).all { it == p } && trickOrder.getOrNull(7) != p) return "七扇"
+        if (trickOrder.take(6).all { it == p } && trickOrder.getOrNull(6) != p) return "六扇"
         return null
-    }
-
-    /** 每墩赢家（按墩顺序；每墩第一项为墩主） */
-    private fun trickWinners(): List<Int> {
-        val result = mutableListOf<Int>()
-        for (p in 0..3) {
-            tricks[p].forEach { result.add(p) }
-        }
-        return result
     }
 
     /** 完局结算：得牌玩家赢墩数 + 各家净输赢 */
     fun settle(): Int {
         if (dePai < 0) return 0
-        // 保不输基准
+        // 保不输基准（本游戏采用的简化规则：空墩不额外加罚，只按基准算）
         val base = when (jieType) {
             JieType.DA_DUI, JieType.HOU -> 6
             JieType.XIAO_DUI -> 5
             else -> 4
         }
-        val fan = fanOf(dePai)
-        // 扇玩家（得牌以外）
-        val fanPlayer: Int = if (fan != null && fan != "八扇")
-            (0..3).firstOrNull { q -> q != dePai && fanOf(q) != null } ?: -1
-        else -1
-
+        // 扇主（六扇/七扇/八扇）：任意一家连赢前 6/7/8 墩即是扇主，不限于得牌者
+        val fanPlayer = (0..3).firstOrNull { fanOf(it) != null }
+        val fan = fanPlayer?.let { fanOf(it) }
         val detail = IntArray(4)
-        // 八扇特殊
+
+        // 八扇特殊：三家各输 per 墩，得牌者赢 3×per
         if (fan == "八扇") {
             val per = when (jieType) {
                 JieType.XIAO_DUI -> 9
@@ -348,33 +338,28 @@ class PaiJiuGame(seed: Long = System.currentTimeMillis()) {
             settlementDetail = detail
             return per * 3
         }
-        // 普通/六扇/七扇：各家相对基准的输赢
+
+        // 六扇/七扇惩罚：扇主向「非扇且非得牌」的两家各收 1/2 墩；得牌者免（若得牌者非扇主）
+        val penalty = when (fan) {
+            "六扇" -> 1
+            "七扇" -> 2
+            else -> 0
+        }
+
+        // 普通/六扇/七扇：其他三家相对基准的输赢（正=赢/入，负=输）
         for (p in 0..3) {
-            if (p == dePai) { detail[p] = 0; continue }
+            if (p == dePai) continue
             var diff = trickCount[p] - base
-            // 六扇/七扇：得牌与扇玩家之外两家多输 1/2 墩
-            if (fanPlayer >= 0 && p != fanPlayer) {
-                diff -= when (fan) {
-                    "六扇" -> 1
-                    "七扇" -> 2
-                    else -> 0
-                }
-            }
-            // 扇玩家加分
-            if (p == fanPlayer) {
-                diff += when (fan) {
-                    "六扇" -> 2
-                    "七扇" -> 4
-                    else -> 0
-                }
+            if (penalty > 0) {
+                // 扇主：多收 2×惩罚（两家各付 1/2）；其余非扇非得牌者：多输 1/2 墩
+                diff += if (p == fanPlayer) 2 * penalty else -penalty
             }
             detail[p] = diff
         }
-        // 得牌者赢 = 三家输的总和（只算输的）
-        val totalWin = (0..3).filter { it != dePai }.sumOf { maxOf(0, -detail[it]) }
-        detail[dePai] = totalWin
+        // 得牌者赢 = 三家输赢之和的相反数（零和：赢家/入一/入二也一并扣除）
+        detail[dePai] = -(0..3).filter { it != dePai }.sumOf { detail[it] }
         settlementDetail = detail
-        return totalWin
+        return detail[dePai]
     }
 
     /** 排名 */

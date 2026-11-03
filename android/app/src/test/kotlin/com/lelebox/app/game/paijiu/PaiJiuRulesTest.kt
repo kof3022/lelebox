@@ -275,6 +275,18 @@ class PaiJiuRulesTest {
     }
 
     @Test
+    fun `sort hand keeps dui hou adjacent with za wu not between`() {
+        // 大猴(猴六)、小猴(猴三)、杂五 → 对猴必须相邻，杂五不能夹中间
+        val hand = listOf(PaiJiuTiles.ZA_WU_A, PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN)
+        val sorted = PaiJiuRules.sortHand(hand)
+        val i6 = sorted.indexOfFirst { it.name == TileName.HOU_LIU }
+        val i3 = sorted.indexOfFirst { it.name == TileName.HOU_SAN }
+        assertEquals(i6 + 1, i3) // 猴六、猴三 紧挨
+        val iw = sorted.indexOfFirst { it.name == TileName.ZA_WU }
+        assertTrue(iw < i6 || iw > i3) // 杂五不在两者中间
+    }
+
+    @Test
     fun `deals differ across seeds`() {
         val h1 = PaiJiuRules.deal(Random(1))
         val h2 = PaiJiuRules.deal(Random(2))

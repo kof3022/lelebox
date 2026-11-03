@@ -55,12 +55,14 @@ fun ElderButton(
     modifier: Modifier = Modifier,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     minHeight: Dp = 64.dp,
+    enabled: Boolean = true,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.96f else 1f)
     Button(
         onClick = onClick,
+        enabled = enabled,
         interactionSource = interaction,
         modifier = modifier
             .heightIn(min = minHeight)

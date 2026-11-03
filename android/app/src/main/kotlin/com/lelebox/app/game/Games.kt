@@ -55,11 +55,12 @@ object Games {
         GameEntry(
             id = "paijiu",
             title = "牌九",
-            subtitle = "打天九，谁先出完谁赢",
-            help = "你和孙权、曹操、刘备打天九。每人 8 张骨牌，你先出一张，别人用更大的同类型牌接，接不住就垫一张。谁先把手里的牌出完谁就赢。点牌选中，再点「出牌」；接不住就点「过」。",
+            subtitle = "打牌九，最后赢墩者得牌",
+            help = "你和孙权、曹操、刘备打天九（安徽阜阳玩法）。每人 8 张骨牌，随机一家先领出。管上：出同样张数、同类型且更大的牌；管不上就点「垫牌」，挑同样张数的牌扣下。点牌选中，再点「出牌」。谁赢下最后一墩，谁就得牌赢下这局。详细规则可点右上角「玩法」查看。",
             kind = GameKind.NATIVE,
             emoji = "🀫",
             accent = GamePaiJiu,
+            iconRes = R.drawable.ic_game_paijiu,
         ),
         GameEntry(
             id = "memory",

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -140,6 +142,7 @@ class GameShellActivity : ComponentActivity() {
                             )
                             "paijiu" -> PaiJiuScreen(
                                 onBack = { finish() },
+                                onHelp = { showHelp = true },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             else -> NativePlaceholder(game)
@@ -153,7 +156,7 @@ class GameShellActivity : ComponentActivity() {
                     onDismissRequest = { showHelp = false },
                     title = { Text("怎么玩「${game.title}」", style = MaterialTheme.typography.titleLarge) },
                     text = {
-                        Column {
+                        Column(Modifier.verticalScroll(rememberScrollState())) {
                             Text(game.help, style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(18.dp))
                             Text(

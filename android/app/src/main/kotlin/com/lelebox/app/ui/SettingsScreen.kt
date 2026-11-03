@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** 设置页：统一卡片式分组（Editorial Luxury 暖调） */
 @Composable
@@ -38,6 +37,11 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var showClearDialog by remember { mutableStateOf(false) }
+    // 版本号从 PackageManager 读取，避免发版时忘记改这里的硬编码（曾落后于 build.gradle.kts）
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+            .getOrNull().orEmpty()
+    }
 
     Column(
         modifier = modifier
@@ -86,17 +90,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            "乐龄游戏盒 v0.5.6-m1\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
+            "乐龄游戏盒 v$versionName\n完全离线 · 无广告 · 永久免费 · 不收集任何数据",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "牌九牌面点阵参考 Wikimedia Commons「SVG Chinese domino sets」\n作者 Mliu92，CC BY-SA 4.0",
-            style = MaterialTheme.typography.labelMedium,
-            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

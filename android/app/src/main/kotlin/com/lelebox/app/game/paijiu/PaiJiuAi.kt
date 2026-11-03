@@ -20,14 +20,38 @@ object PaiJiuAi {
                 listOf(weakest(hand))
             }
             PaiJiuDifficulty.MEDIUM -> {
-                // 中等：优先对猴/对子，其次副子2，否则最小单张
-                pairLead(hand) ?: fuLead(hand) ?: listOf(weakest(hand))
+                // 中等：优先冲结牌（留对子最后出），其次对猴/对子、副子2，否则最小单张
+                savePairForJie(hand) ?: pairLead(hand) ?: fuLead(hand) ?: listOf(weakest(hand))
             }
             PaiJiuDifficulty.HARD -> {
-                // 困难：优先对猴/大对子，其次副子，保留小单张
-                duiHouLead(hand) ?: pairLead(hand) ?: fuLead(hand) ?: listOf(weakest(hand))
+                // 困难：优先冲结牌，其次对猴/大对子、副子，保留小单张
+                savePairForJie(hand) ?: duiHouLead(hand) ?: pairLead(hand) ?: fuLead(hand) ?: listOf(weakest(hand))
             }
         }
+    }
+
+    /** 没人压得过的强单张（各门最大）：天、杂九、老虎 */
+    private val unbeatableSingles = setOf(TileName.TIAN, TileName.ZA_JIU, TileName.LAO_HU)
+
+    /**
+     * 冲结牌策略：手里有一对（含对猴），且这对之外其余牌全是没人压得过的强单张
+     * （天/杂九/老虎）时，先出强单张赢墩、把对子留到最后出 → 最后出对子，
+     * 结牌为 大对结（天/杂九/老虎对）/ 猴结（对猴）/ 小对结（其他对）。
+     */
+    private fun savePairForJie(hand: List<PaiJiuTile>): List<PaiJiuTile>? {
+        // 对子成员：同名 ≥2 张，或 猴六+猴三
+        val pairNames = hand.groupBy { it.name }.filterValues { it.size >= 2 }.keys
+        val hasDuiHou = hand.any { it.name == TileName.HOU_LIU } && hand.any { it.name == TileName.HOU_SAN }
+        if (pairNames.isEmpty() && !hasDuiHou) return null
+        // 其余（非对子）牌
+        val others = hand.filter { t ->
+            !pairNames.contains(t.name) &&
+                !(hasDuiHou && (t.name == TileName.HOU_LIU || t.name == TileName.HOU_SAN))
+        }
+        if (others.isEmpty()) return null
+        if (others.any { it.name !in unbeatableSingles }) return null
+        // 条件成立：先出最弱的强单张（留对子最后出）
+        return listOf(others.maxByOrNull { it.name.order }!!)
     }
 
     /** 领出：对猴（若手中有且难度允许） */

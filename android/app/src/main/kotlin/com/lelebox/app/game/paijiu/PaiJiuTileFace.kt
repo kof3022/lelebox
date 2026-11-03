@@ -1,27 +1,28 @@
 package com.lelebox.app.game.paijiu
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.lelebox.app.R
 
 /**
- * 牌九牌面：Canvas 程序化绘制。
- * 传统样式：白底（象牙白）、窄长形（1:3 左右）、上下两格、红黑点。
- * 红点：1 和 4；黑点：2、3、5、6（骰子排列）。
- * 牌面上不显示牌名（默认），保持传统骨牌外观。
+ * 牌九牌面：使用开源项目 [ammagician/GuPai](https://github.com/ammagician/GuPai)
+ * 的骨牌图片（黑底暖白点/红点），替代原先的深色点阵。
+ *
+ * 牌面图片为 1:2.0 的方形骨牌（320x640 已统一）；调用方应使用与
+ * PaiJiuTileWidth/Height 相同的长宽比尺寸，避免拉伸变形。
  */
 @Composable
 fun PaiJiuTileFace(
@@ -29,105 +30,67 @@ fun PaiJiuTileFace(
     modifier: Modifier = Modifier,
     showName: Boolean = false,
 ) {
-    Canvas(modifier = modifier.clip(RoundedCornerShape(6.dp))) {
-        drawDominoTile(tile, showName)
+    Box(modifier = modifier.clip(RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+        Image(
+            painter = painterResource(tileRes(tile)),
+            contentDescription = tile.name.label,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,
+        )
+        // 牌名（大字，老年友好；默认关闭）
+        if (showName) {
+            Text(
+                tile.name.label,
+                color = Color(0xFFFFE082),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
     }
 }
 
-/** 牌背（统一米色，与麻将牌背风格一致） */
+/** 牌背（深色骨牌背，与牌面同风格） */
 @Composable
 fun PaiJiuTileBack(
     modifier: Modifier = Modifier,
 ) {
-    Canvas(
-        modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .border(1.dp, Color(0xFF8A6F4A), RoundedCornerShape(4.dp)),
-    ) {
-        drawRoundRect(
-            color = Color(0xFFF3E9D4),
-            cornerRadius = CornerRadius(size.minDimension * 0.12f),
-        )
-        // 中间分隔线
-        drawLine(
-            color = Color(0xFFD8C9A8),
-            start = Offset(0f, size.height / 2),
-            end = Offset(size.width, size.height / 2),
-            strokeWidth = size.minDimension * 0.04f,
-        )
+    Image(
+        painter = painterResource(R.drawable.pj_back),
+        contentDescription = null,
+        modifier = modifier.clip(RoundedCornerShape(4.dp)),
+        contentScale = ContentScale.FillBounds,
+    )
+}
+
+/** 牌面 → 图片资源（按点数映射，1:2.6 深色骨牌） */
+fun tileRes(tile: PaiJiuTile): Int {
+    val a = minOf(tile.pip1, tile.pip2)
+    val b = maxOf(tile.pip1, tile.pip2)
+    return when (a to b) {
+        1 to 1 -> R.drawable.pj_1_1
+        1 to 2 -> R.drawable.pj_1_2
+        1 to 3 -> R.drawable.pj_1_3
+        1 to 4 -> R.drawable.pj_1_4
+        1 to 5 -> R.drawable.pj_1_5
+        1 to 6 -> R.drawable.pj_1_6
+        2 to 2 -> R.drawable.pj_2_2
+        2 to 3 -> R.drawable.pj_2_3
+        2 to 4 -> R.drawable.pj_2_4
+        2 to 5 -> R.drawable.pj_2_5
+        2 to 6 -> R.drawable.pj_2_6
+        3 to 3 -> R.drawable.pj_3_3
+        3 to 4 -> R.drawable.pj_3_4
+        3 to 5 -> R.drawable.pj_3_5
+        3 to 6 -> R.drawable.pj_3_6
+        4 to 4 -> R.drawable.pj_4_4
+        4 to 5 -> R.drawable.pj_4_5
+        4 to 6 -> R.drawable.pj_4_6
+        5 to 5 -> R.drawable.pj_5_5
+        5 to 6 -> R.drawable.pj_5_6
+        6 to 6 -> R.drawable.pj_6_6
+        else -> R.drawable.pj_back
     }
 }
 
-/** 在 DrawScope 中绘制一张骨牌（供 PaiJiuTileFace 复用） */
-internal fun DrawScope.drawDominoTile(tile: PaiJiuTile, showName: Boolean) {
-    // 底色
-    drawRoundRect(
-        color = Color(0xFFFBF6EA),
-        cornerRadius = CornerRadius(size.minDimension * 0.1f),
-    )
-    // 细边框
-    drawRoundRect(
-        color = Color(0xFF9A8254),
-        cornerRadius = CornerRadius(size.minDimension * 0.1f),
-        style = Stroke(width = size.minDimension * 0.03f),
-    )
-    // 上下分隔线
-    val midY = size.height / 2
-    drawLine(
-        color = Color(0xFFD8C9A8),
-        start = Offset(size.width * 0.08f, midY),
-        end = Offset(size.width * 0.92f, midY),
-        strokeWidth = size.minDimension * 0.035f,
-    )
-    // 上下两格的点
-    drawPips(tile.pip1, Offset(0f, 0f), Size(size.width, midY))
-    drawPips(tile.pip2, Offset(0f, midY), Size(size.width, midY))
-    // 牌名（大字，老年友好）
-    if (showName) {
-        drawContext.canvas.nativeCanvas.drawText(
-            tile.name.label,
-            size.width / 2,
-            size.height * 0.52f,
-            android.graphics.Paint().apply {
-                color = android.graphics.Color.rgb(0x4E, 0x3A, 0x1E)
-                textSize = size.width * 0.5f
-                textAlign = android.graphics.Paint.Align.CENTER
-                isFakeBoldText = true
-            },
-        )
-    }
-}
-
-/** 在一个格子内按骰子排列绘制 n 个点（1..6）；红点：1、4 */
-private fun DrawScope.drawPips(n: Int, origin: Offset, cell: Size) {
-    if (n < 1 || n > 6) return
-    val red = Color(0xFFC62828)
-    val black = Color(0xFF263238)
-    val r = cell.minDimension * 0.16f
-    // 点位置（相对格子的归一化坐标 0..1）
-    val positions = pipPositions(n)
-    for ((fx, fy) in positions) {
-        val cx = origin.x + cell.width * fx
-        val cy = origin.y + cell.height * fy
-        drawCircle(
-            color = if (n == 1 || n == 4) red else black,
-            radius = r,
-            center = Offset(cx, cy),
-        )
-    }
-}
-
-/** 骰子点排列（归一化坐标，格内 0.25/0.5/0.75 三列三行） */
-private fun pipPositions(n: Int): List<Pair<Float, Float>> = when (n) {
-    1 -> listOf(0.5f to 0.5f)
-    2 -> listOf(0.3f to 0.3f, 0.7f to 0.7f)
-    3 -> listOf(0.3f to 0.3f, 0.5f to 0.5f, 0.7f to 0.7f)
-    4 -> listOf(0.3f to 0.3f, 0.7f to 0.3f, 0.3f to 0.7f, 0.7f to 0.7f)
-    5 -> listOf(0.3f to 0.3f, 0.7f to 0.3f, 0.5f to 0.5f, 0.3f to 0.7f, 0.7f to 0.7f)
-    6 -> listOf(0.3f to 0.3f, 0.3f to 0.5f, 0.3f to 0.7f, 0.7f to 0.3f, 0.7f to 0.5f, 0.7f to 0.7f)
-    else -> emptyList()
-}
-
-/** 便捷尺寸 */
-val PaiJiuTileWidth: Dp = 62.dp
-val PaiJiuTileHeight: Dp = 100.dp
+/** 便捷尺寸（方形骨牌 1:2.0；手牌最大） */
+val PaiJiuTileWidth: Dp = 52.dp
+val PaiJiuTileHeight: Dp = 104.dp

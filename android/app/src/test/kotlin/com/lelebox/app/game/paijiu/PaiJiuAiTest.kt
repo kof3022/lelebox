@@ -20,10 +20,38 @@ class PaiJiuAiTest {
 
     @Test
     fun `hard lead prefers dui hou`() {
-        val hand = listOf(PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN, PaiJiuTiles.TIAN, PaiJiuTiles.ZA_JIU_A)
+        // 手牌含板凳（非强单张）→ 不触发"留对子"，仍优先对猴
+        val hand = listOf(PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN, PaiJiuTiles.TIAN, PaiJiuTiles.ZA_JIU_A, PaiJiuTiles.BAN_DENG)
         val lead = PaiJiuAi.chooseLead(hand, PaiJiuDifficulty.HARD)
         assertEquals(2, lead.size)
         assertTrue(PaiJiuTiles.isDuiHou(lead[0], lead[1]))
+    }
+
+    @Test
+    fun `medium saves pair for jie when rest are unbeatable`() {
+        // 地对一对 + 天/杂九/老虎（没人压得过）→ 留对子最后出，先出强单张
+        val hand = listOf(PaiJiuTiles.DI, PaiJiuTiles.DI, PaiJiuTiles.TIAN, PaiJiuTiles.ZA_JIU_A, PaiJiuTiles.LAO_HU)
+        val lead = PaiJiuAi.chooseLead(hand, PaiJiuDifficulty.MEDIUM)
+        assertEquals(1, lead.size)
+        assertTrue(lead[0].name in setOf(TileName.TIAN, TileName.ZA_JIU, TileName.LAO_HU))
+    }
+
+    @Test
+    fun `medium leads pair normally when a weak card exists`() {
+        // 其余含板凳（非强单张）→ 不冲结牌，正常先出对子
+        val hand = listOf(PaiJiuTiles.DI, PaiJiuTiles.DI, PaiJiuTiles.TIAN, PaiJiuTiles.ZA_JIU_A, PaiJiuTiles.BAN_DENG)
+        val lead = PaiJiuAi.chooseLead(hand, PaiJiuDifficulty.MEDIUM)
+        assertEquals(2, lead.size)
+        assertEquals(TileName.DI, lead[0].name)
+    }
+
+    @Test
+    fun `hard saves dui hou for jie when rest are unbeatable`() {
+        // 对猴 + 天/杂九（无人压得过）→ 留对猴最后出（冲猴结），先出强单张
+        val hand = listOf(PaiJiuTiles.HOU_LIU, PaiJiuTiles.HOU_SAN, PaiJiuTiles.TIAN, PaiJiuTiles.ZA_JIU_A)
+        val lead = PaiJiuAi.chooseLead(hand, PaiJiuDifficulty.HARD)
+        assertEquals(1, lead.size)
+        assertTrue(lead[0].name in setOf(TileName.TIAN, TileName.ZA_JIU))
     }
 
     @Test

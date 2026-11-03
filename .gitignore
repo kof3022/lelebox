@@ -3,3 +3,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# 构建产物与内测安装包不进仓库（体积大，改由 GitHub Releases 分发）
+内测包/
+*.apk
+*.aab

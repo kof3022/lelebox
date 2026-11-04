@@ -1,6 +1,7 @@
 # 乐龄游戏盒 LeLeBox
 
 [![Android CI](https://github.com/kof3022/lelebox/actions/workflows/android-build.yml/badge.svg?branch=main)](https://github.com/kof3022/lelebox/actions/workflows/android-build.yml)
+[![Release](https://img.shields.io/github/v/release/kof3022/lelebox?include_prereleases&label=release&color=3D6B52)](https://github.com/kof3022/lelebox/releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Android-7.0%2B%20%C2%B7%20API%2024-3D6B52.svg)](#技术栈)
 [![Version](https://img.shields.io/badge/version-0.5.7--m7-orange.svg)](#版本与发布)
@@ -128,10 +129,13 @@ cd android
 
 ## 版本与发布
 
+- **最新发布：[`v0.5.7-m7`](https://github.com/kof3022/lelebox/releases/tag/v0.5.7-m7)**（内测版）· 下载 [`LeLeBox-v0.5.7-m7.apk`](https://github.com/kof3022/lelebox/releases/download/v0.5.7-m7/LeLeBox-v0.5.7-m7.apk)（16.67 MB，已签名）
+  - 包名 `com.lelebox.app`，versionCode `46`，Android 7.0+（API 24），ABI：arm64-v8a / armeabi-v7a / x86 / x86_64
+  - 与既往内测包同一签名证书（SHA-256 `6d0e3c5a…54cc`），可直接覆盖安装并保留存档
+  - APK SHA-256：`2c3435a0901c921518834875cb05fa64c2c1db3c70b6bc86efb82cd60a463f5e`
 - 当前 `versionName = 0.5.7-m7`、`versionCode = 46`（见 [`android/app/build.gradle.kts`](android/app/build.gradle.kts)）；设置页显示的版本号由 `PackageManager` 实时读取，不会与构建配置脱节。
-- **仓库不包含构建产物**：内测 APK 体积大，由维护者单独分发，不进 git 历史。
-- GitHub Releases 目前尚无正式版本；签名密钥配置完成后随 M3 发布首个正式版。
-- 各渠道上架流程见 [docs/19-GooglePlay上架指南.md](docs/19-GooglePlay上架指南.md)。
+- **仓库不包含构建产物**：APK 只挂 GitHub Releases，不进 git 历史（`.gitignore` 已挡掉 `内测包/` 与 `*.apk`）。
+- 后续正式版（去内测标记、上架 F-Droid / 酷安 / Google Play）随 M3 推进；各渠道流程见 [docs/19-GooglePlay上架指南.md](docs/19-GooglePlay上架指南.md)。
 
 ## 零权限说明（透明声明）
 

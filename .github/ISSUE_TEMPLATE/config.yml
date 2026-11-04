@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔒 安全问题（请勿公开）
+    url: https://github.com/kof3022/lelebox/security/advisories/new
+    about: 权限回退、数据外泄、供应链等安全问题请走私密报告，见 SECURITY.md
+  - name: 📖 构建与已知限制
+    url: https://github.com/kof3022/lelebox/blob/main/README.md
+    about: 编译失败、中文路径、lint 崩溃、大陆网络问题，先看 README 对应章节
+  - name: 🤝 想提 PR
+    url: https://github.com/kof3022/lelebox/blob/main/CONTRIBUTING.md
+    about: 提交前请读贡献指南：不可新增权限、不可引入联网/广告/统计

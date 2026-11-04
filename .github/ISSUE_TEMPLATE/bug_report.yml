@@ -1,0 +1,84 @@
+name: 问题反馈（Bug）
+description: 游戏打不开、卡住、玩不下去、显示不对等问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填全，尤其是**机型**和**复现步骤**——缺这两样基本无法定位。
+
+        > 涉及权限、数据外泄、供应链的安全问题，**请勿在此提交**，见 [SECURITY.md](https://github.com/kof3022/lelebox/blob/main/SECURITY.md)。
+
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本
+      description: 应用内「设置」页最下方可以看到
+      placeholder: 例：v0.5.7-m7（versionCode 46）
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 设备与系统
+      placeholder: 例：Redmi Note 12 / Android 13；或 模拟器 Pixel 7 API 34
+    validations:
+      required: true
+
+  - type: dropdown
+    id: game
+    attributes:
+      label: 涉及的游戏
+      options:
+        - 斗地主
+        - 麻将
+        - 牌九
+        - 记忆翻牌
+        - 2048
+        - 连连看
+        - 五子棋
+        - 数独
+        - 找不同
+        - 首页 / 设置 / 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开「牌九」
+        2. 选择「困难」难度
+        3. 点「出牌」
+        4. 出现 XX
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果 vs 实际结果
+      placeholder: |
+        期望：……
+        实际：……
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图 / 录屏（可选）
+      description: 可以直接把图片或视频拖进这个输入框
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: selfcheck
+    attributes:
+      label: 自查
+      options:
+        - label: 我已在最新的 Release 版本上复现过
+        - label: 我确认这台设备上没装过其他同名改包

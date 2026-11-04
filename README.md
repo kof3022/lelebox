@@ -149,8 +149,9 @@ cd android
 
 ## 参与与反馈
 
-- 发现问题或有建议：请开 [Issue](https://github.com/kof3022/lelebox/issues)。
-- 提 PR 前请先读 [docs/03-老年友好设计规范.md](docs/03-老年友好设计规范.md)（字号、触控目标、色彩对比度是硬指标）与 [docs/02-开源协议审计表.md](docs/02-协议审计表.md)（新增第三方素材须登记并核对协议）。
+- **提 PR 前请读 [CONTRIBUTING.md](CONTRIBUTING.md)**：本项目不接受新增权限、联网、广告、统计或第三方 SDK；界面改动须满足 [docs/03-老年友好设计规范.md](docs/03-老年友好设计规范.md) 的字号、触控目标、对比度硬指标；新增第三方素材须按 [docs/02-协议审计表.md](docs/02-协议审计表.md) 登记到 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- **Bug 与建议**：走 [Issues](https://github.com/kof3022/lelebox/issues)（已配问题模板，请填机型与复现步骤）。
+- **安全问题**：请勿开公开 Issue，按 [SECURITY.md](SECURITY.md) 走 GitHub 私有漏洞报告。
 - 本项目按 GPL-3.0-or-later 分发，衍生作品需同样开源。
 
 ## 版权与许可

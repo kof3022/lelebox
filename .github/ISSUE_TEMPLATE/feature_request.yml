@@ -1,0 +1,60 @@
+name: 功能建议 / 新游戏
+description: 想要的新玩法、新游戏，或使用上的改进
+title: "[建议] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提建议前请先看一眼 [产品铁律](https://github.com/kof3022/lelebox#产品铁律)：
+        本项目永久免费、**零权限、无账号、无广告、完全离线**，这三条不会为了任何功能让步。
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你想要什么
+      description: 尽量描述具体行为，而不是抽象概念
+      placeholder: 例：麻将里希望「碰」按钮更靠上，现在容易点到出牌
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么对长辈有帮助
+      description: 这个项目只服务老年用户，说清它解决了什么真实困难
+      placeholder: 例：我奶奶 78 岁，手指有点抖，按钮挨太近会误触
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 属于哪一类
+      options:
+        - 新游戏
+        - 现有游戏玩法 / 难度
+        - 界面与字号、对比度
+        - 无障碍（TalkBack / 操作方式）
+        - 性能与包体
+        - 文档与发布
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: 约束自查（不满足的话基本不会被采纳）
+      options:
+        - label: 这个需求不需要联网
+        - label: 这个需求不需要新增任何权限
+        - label: 这个需求不涉及广告、收费、账号或数据收集
+        - label: 我可以接受它作为「可选开关」而不是默认行为
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 参考（可选）
+      description: 竞品截图、类似玩法链接、自己画的原型都欢迎
+    validations:
+      required: false

@@ -32,8 +32,6 @@
 | 🧩 数独 | 每行每列每宫 1–9 不重复，可「做记号」记候选数 | 简单 45 / 中等 36 / 困难 28 个提示 |
 | 🔍 找不同 | 两幅图里找不同，点一下算找到 | 3 档 × 9 个场景（5–7 处不同） |
 
-开发过程与各版本界面截图见 [`screenshots/`](screenshots/)。
-
 ## 产品铁律
 
 1. **零授权**：不声明任何 Android 危险权限，连 `INTERNET` 都没有（绝对离线）。
@@ -42,8 +40,6 @@
 4. **无收费**：无内购、无订阅。
 5. **打开即玩**：无引导、无弹窗、无强制更新。
 6. **老年友好**：正文 ≥ 20sp、触控目标 ≥ 64dp、单击优先、无时间压力、TalkBack 可读。
-
-UI 与交互细则见 [docs/03-老年友好设计规范.md](docs/03-老年友好设计规范.md)。
 
 ## 技术栈
 
@@ -98,25 +94,12 @@ cd android
 │       │   ├── game/GameShellActivity.kt  # 游戏壳（原生 / 离线 H5）
 │       │   └── audio/Sfx.kt               # 音效引擎
 │       └── test/kotlin/com/lelebox/app/   # 134 个单元测试
-├── docs/                                # 规范、规划、走查报告、素材提示词（21 份）
-├── screenshots/                         # 开发过程与各版本界面截图
-├── scripts/                             # 素材生成 / 模拟器冒烟脚本
-├── .github/workflows/android-build.yml  # CI：assembleDebug + 单测 + assembleRelease
-├── APP开发规划.md                        # 产品 / 架构 / 里程碑 / 风险
+├── .github/                             # CI（android-build.yml）+ Issue / PR 模板
+├── CONTRIBUTING.md                      # 贡献指南（适老硬指标、协议登记、提交规范）
+├── SECURITY.md                          # 安全策略与漏洞报告
 ├── THIRD_PARTY_NOTICES.md               # 第三方开源代码与素材署名
 └── LICENSE                              # GPL-3.0 全文
 ```
-
-## 文档索引
-
-| 分类 | 文档 |
-| :-- | :-- |
-| 总规划 | [APP开发规划.md](APP开发规划.md) |
-| 规范与协议 | [01 游戏清单与验收标准](docs/01-游戏清单与验收标准.md) · [02 开源协议审计表](docs/02-协议审计表.md) · [03 老年友好设计规范](docs/03-老年友好设计规范.md) · [04 代码仓库与发布指引](docs/04-代码仓库与发布指引.md) |
-| 过程记录 | [05 M1 看板任务与导入](docs/05-M1看板任务与导入.md) · [06 无障碍走查报告](docs/06-无障碍走查报告.md) · [07 模拟器冒烟报告](docs/07-模拟器冒烟报告.md) · [08 真机矩阵报告](docs/08-真机矩阵报告.md) |
-| 游戏规划 | [11 M2 规划](docs/11-M2规划.md) · [12 斗地主重制计划](docs/12-斗地主重制计划.md) · [16 麻将规划](docs/16-麻将规划.md) · [18 牌九规划](docs/18-牌九天九规划.md) · [18 牌九规则详档](docs/18-牌九天九-规则详档.md) · [18 打天九规则 v2](docs/18-牌九天九-打天九规则v2.md) · [18 牌九素材调研报告](docs/18-牌九天九-素材调研报告.md) |
-| 发布 | [19 Google Play 上架指南](docs/19-GooglePlay上架指南.md) · [20 收费 vs 免费与 0.99 计划](docs/20-GooglePlay收费vs免费与0.99计划.md) |
-| 素材提示词（即梦） | [09 游戏图标](docs/09-游戏图标即梦提示词.md) · [10 记忆翻牌动物头像](docs/10-记忆翻牌动物头像即梦提示词.md) · [13 斗地主牌桌背景](docs/13-斗地主牌桌背景即梦提示词.md) · [14 斗地主 AI 头像](docs/14-孔子庄子头像即梦提示词.md) · [15 找不同底图](docs/15-找不同底图即梦提示词.md) · [17 连连看物品](docs/17-连连看物品即梦提示词.md) |
 
 ## 里程碑
 
@@ -135,7 +118,7 @@ cd android
   - APK SHA-256：`2c3435a0901c921518834875cb05fa64c2c1db3c70b6bc86efb82cd60a463f5e`
 - 当前 `versionName = 0.5.7-m7`、`versionCode = 46`（见 [`android/app/build.gradle.kts`](android/app/build.gradle.kts)）；设置页显示的版本号由 `PackageManager` 实时读取，不会与构建配置脱节。
 - **仓库不包含构建产物**：APK 只挂 GitHub Releases，不进 git 历史（`.gitignore` 已挡掉 `内测包/` 与 `*.apk`）。
-- 后续正式版（去内测标记、上架 F-Droid / 酷安 / Google Play）随 M3 推进；各渠道流程见 [docs/19-GooglePlay上架指南.md](docs/19-GooglePlay上架指南.md)。
+- 后续正式版（去内测标记、上架 F-Droid / 酷安 / Google Play）随 M3 推进。
 
 ## 零权限说明（透明声明）
 
@@ -153,7 +136,7 @@ cd android
 
 ## 参与与反馈
 
-- **提 PR 前请读 [CONTRIBUTING.md](CONTRIBUTING.md)**：本项目不接受新增权限、联网、广告、统计或第三方 SDK；界面改动须满足 [docs/03-老年友好设计规范.md](docs/03-老年友好设计规范.md) 的字号、触控目标、对比度硬指标；新增第三方素材须按 [docs/02-协议审计表.md](docs/02-协议审计表.md) 登记到 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- **提 PR 前请读 [CONTRIBUTING.md](CONTRIBUTING.md)**：本项目不接受新增权限、联网、广告、统计或第三方 SDK；界面改动须满足字号 ≥ 20sp、触控目标 ≥ 64dp、对比度达标等硬指标；新增第三方素材须在 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 登记来源与协议。
 - **Bug 与建议**：走 [Issues](https://github.com/kof3022/lelebox/issues)（已配问题模板，请填机型与复现步骤）。
 - **安全问题**：请勿开公开 Issue，按 [SECURITY.md](SECURITY.md) 走 GitHub 私有漏洞报告。
 - 本项目按 GPL-3.0-or-later 分发，衍生作品需同样开源。

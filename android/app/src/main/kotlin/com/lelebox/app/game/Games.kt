@@ -24,7 +24,7 @@ data class GameEntry(
     val kind: GameKind,
     val emoji: String,
     val accent: Color,
-    /** 矢量图标（即梦生成 PNG 后可替换为位图资源，见 docs/09） */
+    /** 矢量图标（即梦生成 PNG 后可替换为位图资源） */
     val iconRes: Int? = null,
     /** WEB 游戏：assets 内相对路径，如 "games/xxx/index.html" */
     val assetPath: String? = null,

@@ -3,7 +3,7 @@ package com.lelebox.app.game.memory
 import com.lelebox.app.R
 
 /**
- * 卡面动物（8 种常见动物，风格统一；即梦生成，见 docs/10）。
+ * 卡面动物（8 种常见动物，风格统一；即梦生成）。
  * iconRes 指向 drawable-xxhdpi/xxxhdpi 的压缩 PNG。
  */
 data class MemoryAnimal(

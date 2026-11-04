@@ -279,7 +279,7 @@ class GameShellActivity : ComponentActivity() {
             )
         }
 
-        /** 老年样式注入（docs/03 §1-§3）：按字号档位放大字/按钮，隐藏分享等无关元素 */
+        /** 老年样式注入：按字号档位放大字/按钮，隐藏分享等无关元素 */
         private fun elderCssJs(factor: Float): String {
             val base = (20 * factor).toInt()
             val btn = (24 * factor).toInt()

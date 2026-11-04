@@ -11,7 +11,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** 全局字号三档（docs/03 §1）：小 / 标准 / 大 */
+/** 全局字号三档：小 / 标准 / 大 */
 enum class FontScale(val label: String, val factor: Float) {
     SMALL("小", 0.85f),
     STANDARD("标准", 1f),
@@ -47,7 +47,7 @@ val ElderGreenSoft = Color(0xFFDCE9E0)     // 主色浅面（tonal 容器）
 val ElderOrange = Color(0xFFA9713B)        // 强调：暖棕（设置等次要 CTA）
 val ElderOrangeSoft = Color(0xFFF0E2D2)
 
-// 游戏身份色（去饱和、与暖底和谐；docs/03 §3）
+// 游戏身份色（去饱和、与暖底和谐）
 val Game2048 = Color(0xFF3E8E7E)           // 青绿
 val GameSudoku = Color(0xFF4A6FA5)         // 雾蓝
 val GameMemory = Color(0xFF7A5C9E)         // 灰紫

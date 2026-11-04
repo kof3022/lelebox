@@ -42,7 +42,7 @@
 2. **数据外泄**：任何网络请求、埋点、SDK 回传，或把本机进度写到了可被其它应用读取的位置
 3. **本地存档**：`SharedPreferences`（`game_saves` / `lelebox_settings`）被其它应用读取或篡改；`allowBackup=false` 的绕过路径
 4. **WebView 桥接**：若恢复 L2 离线 H5 接入，`addJavascriptInterface` 暴露的方法面（当前 9 款游戏均为 Compose 原生实现，未启用）
-5. **供应链与许可**：依赖或素材来源不明、协议冲突（参见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [docs/02-协议审计表.md](docs/02-协议审计表.md)）
+5. **供应链与许可**：依赖或素材来源不明、协议冲突（参见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)）
 6. **构建与发布**：CI 或发布流程中的密钥泄漏（签名文件、token）
 
 ## 不在范围内

@@ -1,10 +1,10 @@
-﻿package com.lelebox.app.game.mahjong
+package com.lelebox.app.game.mahjong
 
 /** Fan result */
 data class FanResult(val name: String, val fan: Int)
 
 /**
- * Fan calculator (elder-friendly subset, docs/16 sec5).
+ * Fan calculator (elder-friendly subset, simplified scoring).
  * Input: win scheme, all 14 tiles, exposed melds, self-draw, seat/round wind.
  */
 object FanCalculator {
